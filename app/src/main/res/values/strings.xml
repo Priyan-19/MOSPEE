@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MOSPEE</string>
+    <string name="notification_channel_name">MOSPEE Tracking</string>
+    <string name="notification_tracking_title">MOSPEE</string>
+    <string name="notification_tracking_text">Tracking your trip...</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="label_speed">Speed</string>
+    <string name="label_distance">Distance</string>
+    <string name="label_time">Time</string>
+    <string name="label_avg_speed">Avg Speed</string>
+    <string name="label_top_speed">Top Speed</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_mph">mph</string>
+</resources>
