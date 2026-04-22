@@ -283,6 +283,24 @@ private fun HistoryTripCard(
                         Text("${LocationUtils.formatSpeed(trip.topSpeedKmh, useKmh)} ${if (useKmh) "km/h" else "mph"}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Cloud Sync Status
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (trip.isSynced) Icons.Rounded.CloudDone else Icons.Rounded.CloudUpload,
+                        contentDescription = null,
+                        tint = if (trip.isSynced) MospeeGreen else MospeeAmber,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (trip.isSynced) "Synced" else "Pending Sync",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (trip.isSynced) MospeeGreen else MospeeAmber
+                    )
+                }
             }
 
             IconButton(onClick = onDelete) {

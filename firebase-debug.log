@@ -1,0 +1,35 @@
+[debug] [2026-04-22T12:19:03.825Z] ----------------------------------------------------------------------
+[debug] [2026-04-22T12:19:03.828Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Priyan\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js firestore:databases:create (default) --location us-central --project mospee-app-premium-2026
+[debug] [2026-04-22T12:19:03.829Z] CLI Version:   15.15.0
+[debug] [2026-04-22T12:19:03.829Z] Platform:      win32
+[debug] [2026-04-22T12:19:03.829Z] Node Version:  v22.19.0
+[debug] [2026-04-22T12:19:03.829Z] Time:          Wed Apr 22 2026 17:49:03 GMT+0530 (India Standard Time)
+[debug] [2026-04-22T12:19:03.830Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-22T12:19:05.387Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-22T12:19:05.388Z] > authorizing via signed-in user (priyan190406@gmail.com)
+[debug] [2026-04-22T12:19:05.388Z] [iam] checking project mospee-app-premium-2026 for permissions ["datastore.databases.create","firebase.projects.get"]
+[debug] [2026-04-22T12:19:05.390Z] Checked if tokens are valid: false, expires at: 1776861232047
+[debug] [2026-04-22T12:19:05.390Z] Checked if tokens are valid: false, expires at: 1776861232047
+[debug] [2026-04-22T12:19:05.390Z] > refreshing access token with scopes: []
+[debug] [2026-04-22T12:19:05.392Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-04-22T12:19:05.392Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-22T12:19:06.629Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-04-22T12:19:06.629Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-22T12:19:06.655Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mospee-app-premium-2026:testIamPermissions [none]
+[debug] [2026-04-22T12:19:06.655Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mospee-app-premium-2026:testIamPermissions  x-goog-user-project=mospee-app-premium-2026
+[debug] [2026-04-22T12:19:06.655Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mospee-app-premium-2026:testIamPermissions {"permissions":["datastore.databases.create","firebase.projects.get"]}
+[debug] [2026-04-22T12:19:08.499Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mospee-app-premium-2026:testIamPermissions 200
+[debug] [2026-04-22T12:19:08.499Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mospee-app-premium-2026:testIamPermissions {"permissions":["datastore.databases.create","firebase.projects.get"]}
+[debug] [2026-04-22T12:19:08.500Z] Checked if tokens are valid: true, expires at: 1776863945629
+[debug] [2026-04-22T12:19:08.500Z] Checked if tokens are valid: true, expires at: 1776863945629
+[debug] [2026-04-22T12:19:08.500Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/mospee-app-premium-2026/databases databaseId=%28default%29
+[debug] [2026-04-22T12:19:08.500Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/mospee-app-premium-2026/databases {"locationId":"us-central","type":"FIRESTORE_NATIVE","databaseEdition":"STANDARD","deleteProtectionState":"DELETE_PROTECTION_DISABLED","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","firestoreDataAccessMode":"DATA_ACCESS_MODE_UNSPECIFIED","mongodbCompatibleDataAccessMode":"DATA_ACCESS_MODE_UNSPECIFIED"}
+[debug] [2026-04-22T12:19:10.718Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/mospee-app-premium-2026/databases 403
+[debug] [2026-04-22T12:19:10.718Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/mospee-app-premium-2026/databases {"error":{"code":403,"message":"Cloud Firestore API has not been used in project mospee-app-premium-2026 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=mospee-app-premium-2026 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"consumer":"projects/mospee-app-premium-2026","serviceTitle":"Cloud Firestore API","activationUrl":"https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=mospee-app-premium-2026","service":"firestore.googleapis.com","containerInfo":"mospee-app-premium-2026"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Firestore API has not been used in project mospee-app-premium-2026 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=mospee-app-premium-2026 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=mospee-app-premium-2026"}]}]}}
+[debug] [2026-04-22T12:19:15.728Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\Priyan\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:309:49)
+    at listOnTimeout (node:internal/timers:588:17)
+    at process.processTimers (node:internal/timers:523:7)
+[error] 
+[error] Error: An unexpected error has occurred.

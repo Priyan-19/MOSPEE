@@ -34,6 +34,8 @@ fun SettingsScreen(
     val darkMode          by viewModel.darkMode.collectAsStateWithLifecycle()
     val overspeedEnabled  by viewModel.overspeedEnabled.collectAsStateWithLifecycle()
     val overspeedThreshold by viewModel.overspeedThreshold.collectAsStateWithLifecycle()
+    val gpsSmoothing      by viewModel.gpsSmoothing.collectAsStateWithLifecycle()
+    val wifiSyncOnly      by viewModel.wifiSyncOnly.collectAsStateWithLifecycle()
 
     Scaffold(
         bottomBar = {
@@ -59,6 +61,10 @@ fun SettingsScreen(
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ── Account ──────────────────────────────────────────────────────
+                SettingsSectionHeader("Account")
+                AccountInfoCard()
+
                 // ── Display ──────────────────────────────────────────────────────
                 SettingsSectionHeader("Display")
 
@@ -72,14 +78,22 @@ fun SettingsScreen(
 
                 SettingsToggleRow(
                     icon = Icons.Rounded.Speed,
-                    title = "Use km/h",
+                    title = "Speed Units",
                     subtitle = if (useKmh) "Currently showing km/h" else "Currently showing mph",
                     checked = useKmh,
                     onToggle = { viewModel.setUseKmh(it) }
                 )
 
-                // ── Alerts ───────────────────────────────────────────────────────
-                SettingsSectionHeader("Alerts")
+                // ── Tracking ──────────────────────────────────────────────────────
+                SettingsSectionHeader("Tracking")
+
+                SettingsToggleRow(
+                    icon = Icons.Rounded.MyLocation,
+                    title = "GPS Smoothing",
+                    subtitle = "Reduce jitter for a smoother path",
+                    checked = gpsSmoothing,
+                    onToggle = { viewModel.setGpsSmoothing(it) }
+                )
 
                 SettingsToggleRow(
                     icon = Icons.Rounded.NotificationsActive,
@@ -97,30 +111,89 @@ fun SettingsScreen(
                     )
                 }
 
+                // ── Cloud & Storage ────────────────────────────────────────────────
+                SettingsSectionHeader("Cloud Storage")
+
+                SettingsToggleRow(
+                    icon = Icons.Rounded.Wifi,
+                    title = "Sync over Wi-Fi only",
+                    subtitle = "Save mobile data usage",
+                    checked = wifiSyncOnly,
+                    onToggle = { viewModel.setWifiSyncOnly(it) }
+                )
+
                 // ── About ────────────────────────────────────────────────────────
                 SettingsSectionHeader("About")
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MospeeTerracottaLight
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            "MOSPEE v1.2.0",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black.copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "A premium GPS speedometer and trip tracker designed for luxury automotive experiences.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black.copy(alpha = 0.5f)
-                        )
-                    }
-                }
+                AboutCard()
                 
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountInfoCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.6f)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MospeeTerracotta),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    "Anonymous Pilot",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black.copy(alpha = 0.8f)
+                )
+                Text(
+                    "Securely synced to Cloud",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MospeeTerracotta
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MospeeTerracottaLight
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                "MOSPEE Premium v1.3.5",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black.copy(alpha = 0.8f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "A premium GPS speedometer and trip tracker designed for high-performance automotive experiences.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TextButton(onClick = {}) { Text("Rate App", color = MospeeTerracotta) }
+                TextButton(onClick = {}) { Text("Share App", color = MospeeTerracotta) }
             }
         }
     }

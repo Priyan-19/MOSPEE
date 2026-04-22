@@ -9,12 +9,15 @@ import androidx.room.PrimaryKey
 data class TripEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val firebaseId: String? = null,
     val startTime: Long,
     val endTime: Long = 0L,
     val distanceMeters: Float = 0f,
     val avgSpeedKmh: Float = 0f,
     val topSpeedKmh: Float = 0f,
-    val durationSeconds: Long = 0L
+    val durationSeconds: Long = 0L,
+    val encodedRoute: String = "",
+    val isSynced: Boolean = false
 )
 
 @Entity(

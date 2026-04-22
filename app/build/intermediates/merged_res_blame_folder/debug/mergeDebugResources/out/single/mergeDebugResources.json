@@ -1,0 +1,30 @@
+[
+    {
+        "merged": "com.mospee.app-debug-75:/drawable_ic_speed.xml.flat",
+        "source": "com.mospee.app-main-77:/drawable/ic_speed.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.mospee.app-main-77:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/drawable_ic_location_marker.xml.flat",
+        "source": "com.mospee.app-main-77:/drawable/ic_location_marker.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/xml_provider_paths.xml.flat",
+        "source": "com.mospee.app-main-77:/xml/provider_paths.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/mipmap-hdpi_ic_launcher_round.xml.flat",
+        "source": "com.mospee.app-main-77:/mipmap-hdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/mipmap-hdpi_ic_launcher.xml.flat",
+        "source": "com.mospee.app-main-77:/mipmap-hdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.mospee.app-debug-75:/drawable_ic_stop.xml.flat",
+        "source": "com.mospee.app-main-77:/drawable/ic_stop.xml"
+    }
+]

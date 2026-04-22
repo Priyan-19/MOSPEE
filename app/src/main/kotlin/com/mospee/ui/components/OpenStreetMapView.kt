@@ -20,7 +20,9 @@ import org.osmdroid.views.overlay.Polyline
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
     center: GeoPoint = GeoPoint(12.9716, 77.5946),
-    zoom: Double = 14.0,
+    zoom: Double = 15.0,
+    mapType: String = "default", // default, satellite, terrain
+    userLocation: GeoPoint? = null,
     routePoints: List<GeoPoint> = emptyList(),
     showRouteMarkers: Boolean = false,
     followCenter: Boolean = false,
@@ -28,32 +30,41 @@ fun OpenStreetMapView(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    
+    // Remember overlays to avoid recreation
+    val userMarker = remember { 
+        Marker(MapView(context)).apply {
+            icon = context.getDrawable(com.mospee.R.drawable.ic_location_marker)
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            title = "Your Location"
+        }
+    }
+    
+    val routePolyline = remember {
+        Polyline().apply {
+            outlinePaint.color = android.graphics.Color.parseColor("#1A73E8")
+            outlinePaint.strokeWidth = 14f
+        }
+    }
+
     val mapView = remember {
         MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(enableGestures)
-            controller.setZoom(zoom)
-            controller.setCenter(center)
             isTilesScaledToDpi = true
             zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
+            
+            // Add persistent overlays once
+            overlays.add(routePolyline)
+            overlays.add(userMarker)
         }
     }
 
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = object : DefaultLifecycleObserver {
-            override fun onResume(owner: LifecycleOwner) {
-                mapView.onResume()
-            }
-
-            override fun onPause(owner: LifecycleOwner) {
-                mapView.onPause()
-            }
-
-            override fun onDestroy(owner: LifecycleOwner) {
-                mapView.onDetach()
-            }
+            override fun onResume(owner: LifecycleOwner) { mapView.onResume() }
+            override fun onPause(owner: LifecycleOwner) { mapView.onPause() }
+            override fun onDestroy(owner: LifecycleOwner) { mapView.onDetach() }
         }
-
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -65,41 +76,48 @@ fun OpenStreetMapView(
         modifier = modifier,
         factory = { mapView },
         update = { view ->
+            // 1. Update Tile Source ONLY if changed
+            val targetSource = when (mapType) {
+                "satellite" -> TileSourceFactory.USGS_SAT
+                "terrain" -> TileSourceFactory.USGS_TOPO
+                else -> TileSourceFactory.MAPNIK
+            }
+            if (view.tileProvider.tileSource.name() != targetSource.name()) {
+                view.setTileSource(targetSource)
+            }
+
+            // 2. Update Map State
+            if (view.zoomLevelDouble != zoom) {
+                view.controller.setZoom(zoom)
+            }
             view.setMultiTouchControls(enableGestures)
-            view.overlays.clear()
 
+            // 3. Update Route Polyline
             if (routePoints.isNotEmpty()) {
-                val polyline = Polyline().apply {
-                    setPoints(routePoints)
-                    outlinePaint.color = android.graphics.Color.parseColor("#1A73E8")
-                    outlinePaint.strokeWidth = 14f
-                }
-                view.overlays.add(polyline)
+                routePolyline.setPoints(routePoints)
+                routePolyline.isEnabled = true
+            } else {
+                routePolyline.isEnabled = false
+            }
 
-                if (showRouteMarkers) {
-                    val startMarker = Marker(view).apply {
-                        position = routePoints.first()
-                        title = "Start"
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    }
-                    val endMarker = Marker(view).apply {
-                        position = routePoints.last()
-                        title = "Current location"
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    }
-                    view.overlays.add(startMarker)
-                    view.overlays.add(endMarker)
-                }
-
+            // 4. Update User Marker
+            if (userLocation != null) {
+                userMarker.position = userLocation
+                userMarker.isEnabled = true
+                
                 if (followCenter) {
-                    view.controller.animateTo(routePoints.last())
-                } else if (routePoints.size > 1) {
-                    val boundingBox = BoundingBox.fromGeoPoints(routePoints)
-                    view.zoomToBoundingBox(boundingBox, true, 96)
+                    view.controller.animateTo(userLocation)
                 }
             } else {
-                view.controller.setZoom(zoom)
-                view.controller.setCenter(center)
+                userMarker.isEnabled = false
+                if (routePoints.isEmpty()) {
+                    view.controller.setCenter(center)
+                }
+            }
+
+            // 5. Handle Bounding Box if needed (only when route changes and not following)
+            if (routePoints.size > 1 && !followCenter) {
+                // Potential optimization: only do this if points count changed significantly
             }
 
             view.invalidate()

@@ -38,6 +38,9 @@ fun AppNavGraph(navController: NavHostController) {
                 onOpenHistory = {
                     navController.navigate(Screen.History.route)
                 },
+                onOpenTripDetails = { tripId ->
+                    navController.navigate(Screen.Summary.createRoute(tripId))
+                },
                 onOpenSettings = {
                     navController.navigate(Screen.Settings.route)
                 }
@@ -45,7 +48,19 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onOpenHistory = {
+                    navController.navigate(Screen.History.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                }
+            )
         }
 
         composable(Screen.LiveTrip.route) {
@@ -84,7 +99,17 @@ fun AppNavGraph(navController: NavHostController) {
                 onTripClick = { tripId ->
                     navController.navigate(Screen.Summary.createRoute(tripId))
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onOpenSettings = {
+                    navController.navigate(Screen.Settings.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                }
             )
         }
     }

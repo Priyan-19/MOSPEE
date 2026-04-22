@@ -57,4 +57,9 @@ interface TripRepository {
      * Delete a trip and all its location points (cascade).
      */
     suspend fun deleteTrip(tripId: Long)
+
+    /**
+     * Sync all pending trips to Firebase.
+     */
+    suspend fun syncPendingTrips()
 }

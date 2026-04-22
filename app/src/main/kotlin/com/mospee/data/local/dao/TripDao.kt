@@ -30,4 +30,10 @@ interface TripDao {
 
     @Query("SELECT COUNT(*) FROM trips")
     suspend fun getTripCount(): Int
+
+    @Query("SELECT * FROM trips WHERE isSynced = 0")
+    suspend fun getUnsyncedTrips(): List<TripEntity>
+
+    @Query("DELETE FROM trips WHERE id NOT IN (SELECT id FROM trips ORDER BY startTime DESC LIMIT 10)")
+    suspend fun pruneOldTrips()
 }

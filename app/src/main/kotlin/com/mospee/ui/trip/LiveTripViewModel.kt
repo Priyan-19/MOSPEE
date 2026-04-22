@@ -65,6 +65,9 @@ class LiveTripViewModel @Inject constructor(
     val overspeedThreshold: StateFlow<Float> = prefsRepository.overspeedThreshold
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Constants.DEFAULT_OVERSPEED_THRESHOLD_KMH)
 
+    val meterType: StateFlow<String> = prefsRepository.meterType
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "digital")
+
     private val _routePoints = MutableStateFlow<List<LocationPoint>>(emptyList())
     val routePoints: StateFlow<List<LocationPoint>> = _routePoints.asStateFlow()
 

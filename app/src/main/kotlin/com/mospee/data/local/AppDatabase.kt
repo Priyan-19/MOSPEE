@@ -9,7 +9,7 @@ import com.mospee.data.local.entity.TripEntity
 
 @Database(
     entities = [TripEntity::class, LocationPointEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

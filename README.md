@@ -1,6 +1,6 @@
 # MOSPEE 🚗💨 — Premium Automotive Tracking
 
-**MOSPEE** is a high-performance, premium-tech Android GPS speedometer and trip tracker. Designed with a sophisticated "Premium Light" aesthetic, it combines precision GPS engine logic with stunning 3D visualizations and automotive-grade UI components.
+**MOSPEE** is a high-performance, premium-tech Android GPS speedometer and trip tracker. Designed with a sophisticated "Premium Light" aesthetic, it combines precision GPS engine logic with stunning 3D visualizations and a robust hybrid cloud-sync engine.
 
 ![MOSPEE Branding](app/src/main/res/drawable/ic_launcher_foreground.xml)
 
@@ -11,13 +11,13 @@
 | Feature | Description |
 |:---|:---|
 | **Premium Light Tech UI** | A sophisticated design language using `MospeeCream` backgrounds and `MospeeTerracotta` accents. |
+| **Hybrid Storage System** | Keep your last 10 trips locally for instant access, while syncing your entire history to the cloud. |
+| **Route Compression** | Uses Google Polyline Encoding to compress complex GPS routes by over 90% for efficient storage. |
 | **3D Speedometer** | Real-time 3D perspective gauge with kinetic needle physics and dynamic lighting. |
 | **HUD Mode** | Head-Up Display mode flips the display for windshield projection during night drives. |
-| **Pin + Speed Branding** | Custom branding integrated across the app with a unique identity badge. |
 | **Background Resiliency** | A robust Foreground Service ensures tracking continues even with the screen off. |
 | **Intelligent Filtering** | Advanced noise reduction logic filters out GPS jumps and unrealistic speed spikes. |
-| **Interactive Maps** | High-performance OpenStreetMap (via OSMdroid) integration for live route tracking and history review. |
-| **Comprehensive Analytics** | Track distance, duration, top speed, and average speed with high-precision metrics. |
+| **Interactive Maps** | High-performance OpenStreetMap integration for live route tracking and history review. |
 
 ---
 
@@ -41,20 +41,19 @@ Built with **MVVM + Clean Architecture**, the project is highly modular and main
 MOSPEE/
 ├── app/src/main/kotlin/com/mospee/
 │   ├── data/              # Data Layer
-│   │   ├── local/         # Room Database, DAOs, Entities
-│   │   └── repository/    # Repository Implementations
+│   │   ├── local/         # Room Database (Last 10 trips)
+│   │   ├── remote/        # Firebase Firestore & Auth
+│   │   └── repository/    # Repository Implementations (Sync Logic)
 │   ├── domain/            # Domain Layer (Business Logic)
 │   │   ├── model/         # Plain Data Models
-│   │   └── repository/    # Repository Interfaces
-│   ├── service/           # LocationForegroundService (The Engine)
+│   │   └── usecase/       # Logic for Sync, Decryption, etc.
 │   ├── ui/                # UI Layer (Jetpack Compose)
 │   │   ├── home/          # Home Screen (Split-view architecture)
 │   │   ├── trip/          # Live Tracking & Speedometer
 │   │   ├── summary/       # Post-trip Analytics
-│   │   ├── history/       # Saved Trip List
-│   │   ├── components/    # Reusable Premium UI Components
+│   │   ├── history/       # Saved Trip List (Cloud Sync Status)
 │   │   └── theme/         # Design System & Token definitions
-│   └── utils/             # Constants, Formatters, & GPS Logic
+│   └── utils/             # Polyline Encoding, GPS Logic, Constants
 ```
 
 ---
@@ -63,51 +62,44 @@ MOSPEE/
 
 | Layer | Technology |
 |:---|:---|
-| **Language** | Kotlin 2.0 (Modern, expressive, and safe) |
+| **Language** | Kotlin 2.0 |
+| **Cloud DB** | Firebase Firestore (Real-time sync) |
+| **Auth** | Firebase Anonymous Authentication |
+| **Local DB** | Room (SQLite abstraction for local persistence) |
 | **UI Framework** | Jetpack Compose (Declarative UI) |
-| **Design** | Material 3 (Themed with MOSPEE Premium tokens) |
+| **Maps** | OSMdroid & Google Maps Utils (Polyline Encoding) |
 | **DI** | Dagger Hilt (Dependency Injection) |
-| **Database** | Room (SQLite abstraction for local persistence) |
-| **Reactive** | Kotlin Coroutines & StateFlow (Clean async handling) |
-| **Maps** | OSMdroid (OpenStreetMap integration — No API keys required) |
-| **Settings** | DataStore Preferences (Typed, reactive preferences) |
-| **Navigation** | Compose Navigation (Type-safe route management) |
+| **Reactive** | Kotlin Coroutines & StateFlow |
+
+---
+
+## 🔄 Hybrid Storage & Sync Logic
+
+MOSPEE uses a sophisticated two-tier storage system to balance performance and reliability:
+
+1.  **Local (Room)**: Stores only the **last 10 trips** for instantaneous loading and offline access.
+2.  **Cloud (Firestore)**: Stores your **entire history**. Every trip is automatically synced once a connection is available.
+3.  **Compression**: Routes are encoded into **Google Polyline Strings** before transmission, ensuring minimal data usage.
+4.  **Resiliency**: If a sync fails, the app marks the trip as `Pending` and retries automatically on the next app launch.
+
+---
+
+## ⚙️ Configuration & Setup
+
+To enable the cloud features, you must add your Firebase configuration:
+
+1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
+2. Enable **Anonymous Authentication** and **Firestore Database**.
+3. Place your `google-services.json` in the `app/` directory.
 
 ---
 
 ## 🔐 Permissions & Privacy
 
-MOSPEE prioritizes user privacy and battery efficiency.
-
 *   `ACCESS_FINE_LOCATION`: Required for high-precision speedometer metrics.
 *   `ACCESS_BACKGROUND_LOCATION`: Enables tracking while the app is in the background.
 *   `FOREGROUND_SERVICE`: Keeps the GPS engine alive during long trips.
 *   `POST_NOTIFICATIONS`: Shows a persistent speed tile in the notification shade.
-
-*Tracking is local-only; your trip data NEVER leaves your device.*
-
----
-
-## 🔧 Location Filtering Engine
-
-The core of MOSPEE is its robust filtering logic located in `LocationUtils.kt`:
-
-1.  **Accuracy Filter**: Ignores points with accuracy > 30m to prevent jitter.
-2.  **Speed Filter**: Discards unrealistic spikes above 240 km/h (adjustable via Constants).
-3.  **Teleport Filter**: Detects and ignores "jumps" where distance between points is physically impossible in the given time.
-4.  **Displacement Filter**: Ignores small movements (< 5m) to save battery while stationary.
-
----
-
-## 🧪 Development & Testing
-
-### Simulated Driving
-Use the Android Emulator's **Extended Controls** to load a GPX file or manually move the location. Click "Play Route" to see MOSPEE track speed and distance in real-time.
-
-### Build Instructions
-1. Open the project in Android Studio (Ladybug or newer recommended).
-2. Sync Gradle.
-3. Run the `app` module on an Android 8.0+ device or emulator.
 
 ---
 

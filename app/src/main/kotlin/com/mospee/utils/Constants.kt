@@ -3,14 +3,14 @@ package com.mospee.utils
 object Constants {
 
     // Location update intervals
-    const val LOCATION_UPDATE_INTERVAL_MS = 3000L       // 3 seconds
-    const val LOCATION_FASTEST_INTERVAL_MS = 2000L      // 2 seconds
-    const val LOCATION_MIN_DISPLACEMENT_M = 5f          // 5 metres minimum movement
+    const val LOCATION_UPDATE_INTERVAL_MS = 1000L       // 1 second for live feel
+    const val LOCATION_FASTEST_INTERVAL_MS = 500L       // 0.5 seconds
+    const val LOCATION_MIN_DISPLACEMENT_M = 0f          // Get updates even for small movements
 
     // Speed filter thresholds
     const val MAX_VALID_SPEED_KMH = 240f                // Filter spikes above 240 km/h
     const val MAX_VALID_SPEED_MPH = 149.1f
-    const val MIN_ACCURACY_METERS = 30f                 // Ignore points with poor accuracy
+    const val MIN_ACCURACY_METERS = 20f                 // Be stricter with accuracy (20m instead of 30m)
 
     // Distance jump filter: ignore teleports > 300m between two consecutive points
     const val MAX_CONSECUTIVE_DISTANCE_M = 300f

@@ -1,0 +1,49 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background Path Lines (Subtle Blue) -->
+    <path
+        android:strokeWidth="1.5"
+        android:pathData="M20,80 L40,75 L50,85 L70,70 L90,75"
+        android:strokeColor="#334D9BFF" />
+    <path
+        android:strokeWidth="1.5"
+        android:pathData="M80,30 L95,45 L85,60 L100,75"
+        android:strokeColor="#334D9BFF" />
+    
+    <!-- Outer Ring -->
+    <path
+        android:strokeWidth="2"
+        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0"
+        android:strokeColor="#22FFFFFF" />
+
+    <!-- Location Pin + Speedometer Needle (Orange Glow) -->
+    <path
+        android:pathData="M54,25 c-10,0 -18,8 -18,18 c0,12 18,28 18,28 s18,-16 18,-28 c0,-10 -8,-18 -18,-18 Z M54,54 c-6,0 -11,-5 -11,-11 c0,-6 5,-11 11,-11 s11,5 11,11 c0,6 -5,11 -11,11 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="43"
+                android:gradientRadius="30"
+                android:type="radial">
+                <item android:color="#FFFF8A65" android:offset="0" />
+                <item android:color="#FFB0644D" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    
+    <!-- Needle inside the pin -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,43 m-2,0 a2,2 0,1 1,4 0 a2,2 0,1 1,-4 0 L64,33 L54,43 Z" />
+    
+    <!-- Glowing Effect (Stroke) -->
+    <path
+        android:strokeWidth="3"
+        android:pathData="M54,25 c-10,0 -18,8 -18,18 c0,12 18,28 18,28 s18,-16 18,-28 c0,-10 -8,-18 -18,-18 Z"
+        android:strokeColor="#44B0644D" />
+</vector>

@@ -19,7 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mospee.domain.model.LocationPoint
@@ -37,6 +39,7 @@ fun LiveTripScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val useKmh by viewModel.useKmh.collectAsStateWithLifecycle()
     val overspeedThreshold by viewModel.overspeedThreshold.collectAsStateWithLifecycle()
+    val meterType by viewModel.meterType.collectAsStateWithLifecycle()
     val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
 
     var showStopDialog by remember { mutableStateOf(false) }
@@ -78,6 +81,7 @@ fun LiveTripScreen(
                     routePoints = routePoints,
                     useKmh = useKmh,
                     overspeedThreshold = overspeedThreshold,
+                    meterType = meterType,
                     isHudMode = isHudMode,
                     onBack = onBack,
                     onToggleHud = { isHudMode = !isHudMode },
@@ -140,6 +144,7 @@ private fun TrackingContent(
     routePoints: List<LocationPoint>,
     useKmh: Boolean,
     overspeedThreshold: Float,
+    meterType: String,
     isHudMode: Boolean,
     onBack: () -> Unit,
     onToggleHud: () -> Unit,
@@ -157,12 +162,15 @@ private fun TrackingContent(
         }
     }
 
+    val mappedRoutePoints = remember(routePoints) { routePoints.map { it.toGeoPoint() } }
+    val lastPoint = remember(mappedRoutePoints) { mappedRoutePoints.lastOrNull() ?: GeoPoint(12.9716, 77.5946) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         OpenStreetMapView(
             modifier = Modifier.fillMaxSize(),
-            center = routePoints.lastOrNull()?.toGeoPoint() ?: GeoPoint(12.9716, 77.5946),
+            center = lastPoint,
             zoom = 16.0,
-            routePoints = routePoints.map { it.toGeoPoint() },
+            routePoints = mappedRoutePoints,
             showRouteMarkers = true,
             followCenter = true
         )
@@ -217,22 +225,45 @@ private fun TrackingContent(
                 shadowElevation = 16.dp
             ) {
                 Column(modifier = Modifier.padding(24.dp).navigationBarsPadding()) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(text = "CURRENT SPEED", style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.4f))
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(text = "%.0f".format(speedValue), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = if (state.isOverspeed) MospeeRed else Color.Black)
-                                Text(text = unit, modifier = Modifier.padding(bottom = 12.dp, start = 4.dp), style = MaterialTheme.typography.titleMedium, color = Color.Black.copy(alpha = 0.4f))
+                    if (meterType == "analog") {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Speedometer3D(
+                                speed = speedValue,
+                                unit = unit,
+                                modifier = Modifier.size(180.dp)
+                            )
+                            
+                            // Speed Limit Overlay for Analog
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                shape = CircleShape,
+                                color = MospeeTerracottaLight,
+                                border = BorderStroke(1.dp, MospeeTerracotta.copy(alpha = 0.2f))
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "LIMIT", style = MaterialTheme.typography.labelSmall, color = MospeeTerracotta, fontSize = 8.sp)
+                                    Text(text = overspeedThreshold.toInt().toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MospeeTerracotta)
+                                }
                             }
                         }
-                        
-                        Box(
-                            modifier = Modifier.size(80.dp).clip(CircleShape).background(MospeeTerracottaLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = "LIMIT", style = MaterialTheme.typography.labelSmall, color = MospeeTerracotta)
-                                Text(text = overspeedThreshold.toInt().toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MospeeTerracotta)
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column {
+                                Text(text = "CURRENT SPEED", style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.4f))
+                                Row(verticalAlignment = Alignment.Bottom) {
+                                    Text(text = "%.0f".format(speedValue), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = if (state.isOverspeed) MospeeRed else Color.Black)
+                                    Text(text = unit, modifier = Modifier.padding(bottom = 12.dp, start = 4.dp), style = MaterialTheme.typography.titleMedium, color = Color.Black.copy(alpha = 0.4f))
+                                }
+                            }
+                            
+                            Box(
+                                modifier = Modifier.size(80.dp).clip(CircleShape).background(MospeeTerracottaLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "LIMIT", style = MaterialTheme.typography.labelSmall, color = MospeeTerracotta)
+                                    Text(text = overspeedThreshold.toInt().toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MospeeTerracotta)
+                                }
                             }
                         }
                     }

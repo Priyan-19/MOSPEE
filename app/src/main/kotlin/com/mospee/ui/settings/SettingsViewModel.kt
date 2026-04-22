@@ -27,8 +27,16 @@ class SettingsViewModel @Inject constructor(
     val overspeedThreshold: StateFlow<Float> = prefsRepository.overspeedThreshold
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 100f)
 
+    val gpsSmoothing: StateFlow<Boolean> = prefsRepository.gpsSmoothing
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val wifiSyncOnly: StateFlow<Boolean> = prefsRepository.wifiSyncOnly
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setUseKmh(value: Boolean) = viewModelScope.launch { prefsRepository.setUseKmh(value) }
     fun setDarkMode(value: Boolean) = viewModelScope.launch { prefsRepository.setDarkMode(value) }
     fun setOverspeedEnabled(value: Boolean) = viewModelScope.launch { prefsRepository.setOverspeedEnabled(value) }
     fun setOverspeedThreshold(value: Float) = viewModelScope.launch { prefsRepository.setOverspeedThreshold(value) }
+    fun setGpsSmoothing(value: Boolean) = viewModelScope.launch { prefsRepository.setGpsSmoothing(value) }
+    fun setWifiSyncOnly(value: Boolean) = viewModelScope.launch { prefsRepository.setWifiSyncOnly(value) }
 }

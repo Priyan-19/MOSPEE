@@ -167,7 +167,8 @@ class LocationForegroundService : Service() {
         // Filter noise
         if (!LocationUtils.isLocationValid(location, lastLocation)) return
 
-        val speedKmh = LocationUtils.msToKmh(location.speed)
+        var speedKmh = LocationUtils.msToKmh(location.speed)
+        if (speedKmh < 1.5f) speedKmh = 0f
 
         // Accumulate distance
         lastLocation?.let { last ->

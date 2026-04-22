@@ -48,6 +48,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import com.mospee.ui.theme.MapBackdropGradient
 import com.mospee.ui.theme.MospeeAmber
 import com.mospee.ui.theme.MospeeBlue
@@ -57,6 +60,7 @@ import com.mospee.ui.theme.MospeeOutline
 import com.mospee.ui.theme.MospeeRed
 import com.mospee.ui.theme.MospeeSurface
 import com.mospee.ui.theme.MospeeSurfaceAlt
+import com.mospee.ui.theme.MospeeTerracotta
 import com.mospee.ui.theme.MospeeTextPrimary
 import com.mospee.ui.theme.MospeeTextSecondary
 import com.mospee.ui.theme.MospeeWhite
@@ -121,29 +125,38 @@ val DarkMapStyleJson = """
 @Composable
 fun Speedometer3D(
     speed: Float,
-    maxSpeed: Float = 120f,
+    maxSpeed: Float = 160f,
     unit: String = "km/h",
     modifier: Modifier = Modifier
 ) {
     val transition = updateTransition(targetState = speed.coerceIn(0f, maxSpeed), label = "speed")
     val animatedSpeed by transition.animateFloat(
-        transitionSpec = { tween(durationMillis = 450, easing = FastOutSlowInEasing) },
+        transitionSpec = { tween(durationMillis = 600, easing = FastOutSlowInEasing) },
         label = "animated_speed"
     ) { it }
 
     Box(
-        modifier = modifier.size(260.dp),
+        modifier = modifier.size(240.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = 18.dp.toPx()
-            val startAngle = 150f
-            val sweep = 240f
-            val topLeft = Offset(stroke, stroke)
-            val arcSize = Size(size.width - stroke * 2, size.height - stroke * 2)
+        // Outer Glow Circle
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.05f),
+            border = BorderStroke(2.dp, Color.White.copy(alpha = 0.1f))
+        ) {}
 
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = 12.dp.toPx()
+            val startAngle = 135f
+            val sweep = 270f
+            val topLeft = Offset(stroke * 2, stroke * 2)
+            val arcSize = Size(size.width - stroke * 4, size.height - stroke * 4)
+
+            // Background Arc
             drawArc(
-                color = MospeeSurfaceAlt,
+                color = Color.Black.copy(alpha = 0.05f),
                 startAngle = startAngle,
                 sweepAngle = sweep,
                 useCenter = false,
@@ -152,9 +165,12 @@ fun Speedometer3D(
                 style = Stroke(width = stroke, cap = StrokeCap.Round)
             )
 
+            // Speed Arc
             drawArc(
                 brush = Brush.sweepGradient(
-                    listOf(MospeeBlue, MospeeBlueBright, MospeeGreen)
+                    0.0f to MospeeTerracotta.copy(alpha = 0.3f),
+                    0.5f to MospeeTerracotta,
+                    1.0f to MospeeTerracotta
                 ),
                 startAngle = startAngle,
                 sweepAngle = sweep * (animatedSpeed / maxSpeed),
@@ -163,21 +179,90 @@ fun Speedometer3D(
                 size = arcSize,
                 style = Stroke(width = stroke, cap = StrokeCap.Round)
             )
+
+            // Indicator Dots
+            val radius = arcSize.width / 2
+            val center = Offset(size.width / 2, size.height / 2)
+            for (i in 0..10) {
+                val angle = startAngle + (sweep / 10) * i
+                val rad = Math.toRadians(angle.toDouble())
+                val x = center.x + (radius + 20f) * Math.cos(rad).toFloat()
+                val y = center.y + (radius + 20f) * Math.sin(rad).toFloat()
+                drawCircle(
+                    color = if (animatedSpeed / maxSpeed >= i / 10f) MospeeTerracotta else Color.LightGray.copy(alpha = 0.3f),
+                    radius = 2.dp.toPx(),
+                    center = Offset(x, y)
+                )
+            }
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = speed.toInt().toString(),
-                style = MaterialTheme.typography.displayMedium,
-                color = MospeeWhite,
-                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp),
+                color = Color.Black.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = unit,
+                text = unit.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
-                color = MospeeTextSecondary
+                color = MospeeTerracotta,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
             )
+        }
+    }
+}
+
+@Composable
+fun DigitalSpeedometer(
+    speed: Float,
+    unit: String = "km/h",
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = speed.toInt().toString(),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 120.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-4).sp
+                    ),
+                    color = Color.Black.copy(alpha = 0.85f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = unit,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MospeeTerracotta,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
+            
+            // Speed bar
+            Box(
+                modifier = Modifier
+                    .width(180.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.05f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth( (speed / 160f).coerceIn(0f, 1f) )
+                        .fillMaxHeight()
+                        .background(MospeeTerracotta)
+                )
+            }
         }
     }
 }

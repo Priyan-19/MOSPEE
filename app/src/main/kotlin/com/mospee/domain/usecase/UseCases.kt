@@ -46,9 +46,25 @@ class GetTripDetailsUseCase @Inject constructor(
     private val repository: TripRepository
 ) {
     suspend operator fun invoke(tripId: Long): Pair<Trip?, List<LocationPoint>> {
-        val trip = repository.getTripById(tripId)
+        val trip = repository.getTripById(tripId) ?: return Pair(null, emptyList())
         val points = repository.getLocationPointsForTrip(tripId)
-        return Pair(trip, points)
+        
+        return if (points.isEmpty() && trip.encodedRoute.isNotEmpty()) {
+            val decoded = com.mospee.utils.RouteUtils.decodeRoute(trip.encodedRoute).mapIndexed { index, gp ->
+                LocationPoint(
+                    id = index.toLong(),
+                    tripId = tripId,
+                    latitude = gp.latitude,
+                    longitude = gp.longitude,
+                    speedKmh = 0f,
+                    accuracyMeters = 0f,
+                    timestamp = 0L
+                )
+            }
+            Pair(trip, decoded)
+        } else {
+            Pair(trip, points)
+        }
     }
 }
 

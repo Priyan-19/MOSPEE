@@ -4,9 +4,11 @@ import com.mospee.data.local.dao.LocationPointDao
 import com.mospee.data.local.dao.TripDao
 import com.mospee.data.local.entity.LocationPointEntity
 import com.mospee.data.local.entity.TripEntity
+import com.mospee.data.remote.FirebaseManager
 import com.mospee.domain.model.LocationPoint
 import com.mospee.domain.model.Trip
 import com.mospee.domain.repository.TripRepository
+import com.mospee.utils.RouteUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -15,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class TripRepositoryImpl @Inject constructor(
     private val tripDao: TripDao,
-    private val locationPointDao: LocationPointDao
+    private val locationPointDao: LocationPointDao,
+    private val firebaseManager: FirebaseManager
 ) : TripRepository {
 
     override suspend fun startTrip(startTime: Long): Long {
@@ -31,15 +34,45 @@ class TripRepositoryImpl @Inject constructor(
         topSpeedKmh: Float,
         durationSeconds: Long
     ) {
+        val points = locationPointDao.getPointsForTrip(tripId)
+        val encodedRoute = RouteUtils.encodeRoute(points)
+
         val existing = tripDao.getTripById(tripId) ?: return
         val updated = existing.copy(
             endTime = endTime,
             distanceMeters = distanceMeters,
             avgSpeedKmh = avgSpeedKmh,
             topSpeedKmh = topSpeedKmh,
-            durationSeconds = durationSeconds
+            durationSeconds = durationSeconds,
+            encodedRoute = encodedRoute,
+            isSynced = false
         )
+        
         tripDao.updateTrip(updated)
+        
+        // Clear raw points for this trip from Room to save space
+        locationPointDao.deletePointsForTrip(tripId)
+        
+        // Prune Room DB to keep only last 10 trips
+        tripDao.pruneOldTrips()
+        
+        // Try initial sync
+        uploadToFirebase(updated)
+    }
+
+    private suspend fun uploadToFirebase(trip: TripEntity) {
+        val cloudId = firebaseManager.uploadTrip(trip)
+        if (cloudId != null) {
+            val synced = trip.copy(firebaseId = cloudId, isSynced = true)
+            tripDao.updateTrip(synced)
+        }
+    }
+
+    override suspend fun syncPendingTrips() {
+        val unsynced = tripDao.getUnsyncedTrips()
+        unsynced.forEach { trip ->
+            uploadToFirebase(trip)
+        }
     }
 
     override suspend fun saveLocationPoint(point: LocationPoint) {
@@ -71,12 +104,15 @@ class TripRepositoryImpl @Inject constructor(
 
     private fun TripEntity.toDomain() = Trip(
         id = id,
+        firebaseId = firebaseId,
         startTime = startTime,
         endTime = endTime,
         distanceMeters = distanceMeters,
         avgSpeedKmh = avgSpeedKmh,
         topSpeedKmh = topSpeedKmh,
-        durationSeconds = durationSeconds
+        durationSeconds = durationSeconds,
+        encodedRoute = encodedRoute,
+        isSynced = isSynced
     )
 
     private fun LocationPointEntity.toDomain() = LocationPoint(

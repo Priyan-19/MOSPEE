@@ -59,22 +59,40 @@ object LocationUtils {
         lastLocation: Location?
     ): Boolean {
         // Reject poor accuracy
-        if (newLocation.accuracy > Constants.MIN_ACCURACY_METERS) return false
+        // Note: Indoors, accuracy can be 20-50m, which causes drift.
+        if (newLocation.accuracy > 15f) return false
 
         // Reject unrealistic speed values
         val speedKmh = msToKmh(newLocation.speed)
         if (speedKmh > Constants.MAX_VALID_SPEED_KMH) return false
 
+        // DRIFT FILTER: If speed is very low (e.g. < 1.5 km/h), ignore it as noise
+        // This stops the "scribble" effect when sitting still.
+        if (speedKmh < 1.5f && newLocation.hasSpeed()) {
+             // We don't return false yet, we might still want the point for the map,
+             // but we'll check distance next.
+        }
+
         // Reject teleport jumps
         if (lastLocation != null) {
             val distanceToLast = newLocation.distanceTo(lastLocation)
             val timeDiffSeconds = abs(newLocation.time - lastLocation.time) / 1000f
+            
+            // STATIONARY FILTER: If distance moved is tiny (< 2 meters), ignore it.
+            // This is the most effective way to stop indoor distance creep.
+            if (distanceToLast < 2.0f) return false
+
             if (timeDiffSeconds > 0.5f) {
                 val impliedSpeed = distanceToLast / timeDiffSeconds  // m/s
                 val impliedSpeedKmh = msToKmh(impliedSpeed)
+                
+                // If implied speed is also very low, it's likely drift
+                if (impliedSpeedKmh < 1.0f) return false
+
                 // Allow a bit more buffer for implied speed (1.5x) to account for jitter
                 if (impliedSpeedKmh > Constants.MAX_VALID_SPEED_KMH * 1.5f) return false
             }
+            
             // Also reject if jumped more than 500m instantly
             if (distanceToLast > Constants.MAX_CONSECUTIVE_DISTANCE_M && timeDiffSeconds < 5f) {
                 return false
