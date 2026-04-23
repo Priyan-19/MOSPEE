@@ -11,8 +11,8 @@ import javax.inject.Singleton
 @Singleton
 class FirebaseManager @Inject constructor() {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     suspend fun signInAnonymously(): String? {
         return try {

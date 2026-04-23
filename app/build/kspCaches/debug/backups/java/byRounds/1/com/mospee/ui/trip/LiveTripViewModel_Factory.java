@@ -1,9 +1,11 @@
 package com.mospee.ui.trip;
 
 import android.content.Context;
+import android.location.LocationManager;
 import com.mospee.data.repository.UserPreferencesRepository;
 import com.mospee.domain.repository.TripRepository;
 import com.mospee.domain.usecase.StartTripUseCase;
+import com.mospee.location.LocationClient;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -34,30 +36,41 @@ public final class LiveTripViewModel_Factory implements Factory<LiveTripViewMode
 
   private final Provider<UserPreferencesRepository> prefsRepositoryProvider;
 
+  private final Provider<LocationManager> locationManagerProvider;
+
+  private final Provider<LocationClient> locationClientProvider;
+
   public LiveTripViewModel_Factory(Provider<Context> contextProvider,
       Provider<StartTripUseCase> startTripUseCaseProvider,
       Provider<TripRepository> tripRepositoryProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<LocationManager> locationManagerProvider,
+      Provider<LocationClient> locationClientProvider) {
     this.contextProvider = contextProvider;
     this.startTripUseCaseProvider = startTripUseCaseProvider;
     this.tripRepositoryProvider = tripRepositoryProvider;
     this.prefsRepositoryProvider = prefsRepositoryProvider;
+    this.locationManagerProvider = locationManagerProvider;
+    this.locationClientProvider = locationClientProvider;
   }
 
   @Override
   public LiveTripViewModel get() {
-    return newInstance(contextProvider.get(), startTripUseCaseProvider.get(), tripRepositoryProvider.get(), prefsRepositoryProvider.get());
+    return newInstance(contextProvider.get(), startTripUseCaseProvider.get(), tripRepositoryProvider.get(), prefsRepositoryProvider.get(), locationManagerProvider.get(), locationClientProvider.get());
   }
 
   public static LiveTripViewModel_Factory create(Provider<Context> contextProvider,
       Provider<StartTripUseCase> startTripUseCaseProvider,
       Provider<TripRepository> tripRepositoryProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
-    return new LiveTripViewModel_Factory(contextProvider, startTripUseCaseProvider, tripRepositoryProvider, prefsRepositoryProvider);
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<LocationManager> locationManagerProvider,
+      Provider<LocationClient> locationClientProvider) {
+    return new LiveTripViewModel_Factory(contextProvider, startTripUseCaseProvider, tripRepositoryProvider, prefsRepositoryProvider, locationManagerProvider, locationClientProvider);
   }
 
   public static LiveTripViewModel newInstance(Context context, StartTripUseCase startTripUseCase,
-      TripRepository tripRepository, UserPreferencesRepository prefsRepository) {
-    return new LiveTripViewModel(context, startTripUseCase, tripRepository, prefsRepository);
+      TripRepository tripRepository, UserPreferencesRepository prefsRepository,
+      LocationManager locationManager, LocationClient locationClient) {
+    return new LiveTripViewModel(context, startTripUseCase, tripRepository, prefsRepository, locationManager, locationClient);
   }
 }

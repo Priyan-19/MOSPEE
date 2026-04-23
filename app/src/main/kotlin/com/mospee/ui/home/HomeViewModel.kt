@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
@@ -33,7 +36,8 @@ sealed class HomeUiState {
 class HomeViewModel @Inject constructor(
     private val getLastTripUseCase: GetLastTripUseCase,
     private val prefsRepository: UserPreferencesRepository,
-    private val locationManager: LocationManager
+    private val locationManager: LocationManager,
+    private val locationClient: com.mospee.location.LocationClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -95,53 +99,13 @@ class HomeViewModel @Inject constructor(
  
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
-        try {
-            // Try last known first
-            val lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            val lastNetwork = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            
-            val bestLastKnown = if (lastGps != null && lastNetwork != null) {
-                if (lastGps.time > lastNetwork.time) lastGps else lastNetwork
-            } else lastGps ?: lastNetwork
-
-            bestLastKnown?.let {
-                _userLocation.value = GeoPoint(it.latitude, it.longitude)
+        locationClient
+            .getLocationUpdates(5000L) // 5 seconds for Home screen is enough
+            .onEach { location ->
+                _userLocation.value = GeoPoint(location.latitude, location.longitude)
             }
-
-            val listener = object : LocationListener {
-                override fun onLocationChanged(location: Location) {
-                    _userLocation.value = GeoPoint(location.latitude, location.longitude)
-                }
-                @Deprecated("Deprecated in Java")
-                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-                override fun onProviderEnabled(provider: String) {}
-                override fun onProviderDisabled(provider: String) {}
-            }
-
-            // Request from GPS
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER,
-                    5000L,
-                    5f,
-                    listener
-                )
-            }
-
-            // Also request from Network for faster initial fix
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER,
-                    5000L,
-                    5f,
-                    listener
-                )
-            }
-        } catch (e: SecurityException) {
-            e.printStackTrace()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+            .catch { e -> e.printStackTrace() }
+            .launchIn(viewModelScope)
     }
 
     fun loadLastTrip() {

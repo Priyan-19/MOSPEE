@@ -46,4 +46,19 @@ object AppModule {
         @ApplicationContext context: Context
     ): LocationManager =
         context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+    @Provides
+    @Singleton
+    fun provideFusedLocationProviderClient(
+        @ApplicationContext context: Context
+    ): com.google.android.gms.location.FusedLocationProviderClient =
+        com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+
+    @Provides
+    @Singleton
+    fun provideLocationClient(
+        @ApplicationContext context: Context,
+        client: com.google.android.gms.location.FusedLocationProviderClient
+    ): com.mospee.location.LocationClient =
+        com.mospee.location.DefaultLocationClient(context, client)
 }

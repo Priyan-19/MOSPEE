@@ -3,6 +3,7 @@ package com.mospee.service;
 import android.location.LocationManager;
 import com.mospee.data.repository.UserPreferencesRepository;
 import com.mospee.domain.repository.TripRepository;
+import com.mospee.location.LocationClient;
 import dagger.MembersInjector;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.InjectedFieldSignature;
@@ -30,19 +31,24 @@ public final class LocationForegroundService_MembersInjector implements MembersI
 
   private final Provider<UserPreferencesRepository> prefsRepositoryProvider;
 
+  private final Provider<LocationClient> locationClientProvider;
+
   public LocationForegroundService_MembersInjector(Provider<TripRepository> repositoryProvider,
       Provider<LocationManager> locationManagerProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<LocationClient> locationClientProvider) {
     this.repositoryProvider = repositoryProvider;
     this.locationManagerProvider = locationManagerProvider;
     this.prefsRepositoryProvider = prefsRepositoryProvider;
+    this.locationClientProvider = locationClientProvider;
   }
 
   public static MembersInjector<LocationForegroundService> create(
       Provider<TripRepository> repositoryProvider,
       Provider<LocationManager> locationManagerProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
-    return new LocationForegroundService_MembersInjector(repositoryProvider, locationManagerProvider, prefsRepositoryProvider);
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<LocationClient> locationClientProvider) {
+    return new LocationForegroundService_MembersInjector(repositoryProvider, locationManagerProvider, prefsRepositoryProvider, locationClientProvider);
   }
 
   @Override
@@ -50,6 +56,7 @@ public final class LocationForegroundService_MembersInjector implements MembersI
     injectRepository(instance, repositoryProvider.get());
     injectLocationManager(instance, locationManagerProvider.get());
     injectPrefsRepository(instance, prefsRepositoryProvider.get());
+    injectLocationClient(instance, locationClientProvider.get());
   }
 
   @InjectedFieldSignature("com.mospee.service.LocationForegroundService.repository")
@@ -68,5 +75,11 @@ public final class LocationForegroundService_MembersInjector implements MembersI
   public static void injectPrefsRepository(LocationForegroundService instance,
       UserPreferencesRepository prefsRepository) {
     instance.prefsRepository = prefsRepository;
+  }
+
+  @InjectedFieldSignature("com.mospee.service.LocationForegroundService.locationClient")
+  public static void injectLocationClient(LocationForegroundService instance,
+      LocationClient locationClient) {
+    instance.locationClient = locationClient;
   }
 }

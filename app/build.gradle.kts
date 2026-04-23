@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -82,6 +83,7 @@ dependencies {
 
     // Free location & maps stack
     implementation(libs.osmdroid.android)
+    implementation(libs.play.location)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -104,5 +106,3 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
-
-apply(plugin = "com.google.gms.google-services")

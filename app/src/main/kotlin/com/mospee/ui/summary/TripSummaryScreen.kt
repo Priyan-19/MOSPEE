@@ -2,6 +2,7 @@ package com.mospee.ui.summary
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -111,94 +113,152 @@ private fun SummaryContent(
 
     val startText = remember(trip.startTime) { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(trip.startTime)) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        Box(modifier = Modifier.height(300.dp)) {
-            SummaryMap(points = points)
-            Surface(
-                modifier = Modifier.padding(16.dp).size(48.dp),
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.9f),
-                shadowElevation = 4.dp
-            ) {
-                IconButton(onClick = onBack) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = Color.Gray) }
+    Box(modifier = modifier.fillMaxSize()) {
+        // Full screen map background
+        SummaryMap(points = points)
+        
+        // Dark scrim for readability
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.05f),
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.7f)
+                        )
+                    )
+                )
+        )
+
+        // Back button (Floating)
+        Surface(
+            modifier = Modifier
+                .padding(top = 48.dp, start = 20.dp)
+                .size(44.dp),
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.9f),
+            shadowElevation = 4.dp
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Rounded.ArrowBack, "Back", tint = Color.Black)
             }
         }
 
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(text = "Trip Summary", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.Black.copy(alpha = 0.8f))
-            Text(text = startText, style = MaterialTheme.typography.bodyMedium, color = Color.Black.copy(alpha = 0.4f))
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                item { SummaryStatItem("Distance", LocationUtils.formatDistance(trip.distanceMeters, useKmh), Icons.Rounded.Route) }
-                item { SummaryStatItem("Time", LocationUtils.formatDuration(trip.durationSeconds), Icons.Rounded.Schedule) }
-                item { SummaryStatItem("Avg Speed", "${LocationUtils.formatSpeed(trip.avgSpeedKmh, useKmh)} ${if (useKmh) "km/h" else "mph"}", Icons.Rounded.Speed) }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(text = "DETAILED METRICS", style = MaterialTheme.typography.labelMedium, color = MospeeTerracotta, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
+        // Content Panel (Overlay)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Spacer(modifier = Modifier.height(400.dp)) // Let map be visible at the top
 
             Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                shadowElevation = 2.dp
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                color = MospeeCream,
+                shadowElevation = 16.dp
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    MetricRow("Top Speed", "${LocationUtils.formatSpeed(trip.topSpeedKmh, useKmh)} ${if (useKmh) "km/h" else "mph"}", Icons.Rounded.Bolt)
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Black.copy(alpha = 0.05f))
-                    MetricRow("Total Points", points.size.toString(), Icons.Rounded.LocationOn)
-                }
-            }
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Trip Summary", 
+                                style = MaterialTheme.typography.headlineMedium, 
+                                fontWeight = FontWeight.Bold, 
+                                color = Color.Black.copy(alpha = 0.8f)
+                            )
+                            Text(
+                                text = startText, 
+                                style = MaterialTheme.typography.bodyMedium, 
+                                color = Color.Black.copy(alpha = 0.4f)
+                            )
+                        }
+                        
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(MospeeRed.copy(alpha = 0.1f))
+                        ) {
+                            Icon(Icons.Rounded.Delete, "Delete", tint = MospeeRed)
+                        }
+                    }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(
-                    onClick = {
-                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                        }, "Share trip"))
-                    },
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MospeeTerracotta)
-                ) {
-                    Icon(Icons.Rounded.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share")
-                }
-                OutlinedButton(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MospeeRed.copy(alpha = 0.5f))
-                ) {
-                    Icon(Icons.Rounded.Delete, contentDescription = null, tint = MospeeRed)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Delete", color = MospeeRed)
-                }
-            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SummaryStatItem("Distance", LocationUtils.formatDistance(trip.distanceMeters, useKmh), Icons.Rounded.Route, Modifier.weight(1f))
+                        SummaryStatItem("Time", LocationUtils.formatDuration(trip.durationSeconds), Icons.Rounded.Schedule, Modifier.weight(1f))
+                        SummaryStatItem("Avg Speed", LocationUtils.formatSpeed(trip.avgSpeedKmh, useKmh) + (if (useKmh) " km/h" else " mph"), Icons.Rounded.Speed, Modifier.weight(1f))
+                    }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth()) {
-                Text("Back to History", color = Color.Gray)
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Text(
+                        text = "DETAILED METRICS", 
+                        style = MaterialTheme.typography.labelMedium, 
+                        color = MospeeTerracotta, 
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            MetricRow("Top Speed", "${LocationUtils.formatSpeed(trip.topSpeedKmh, useKmh)} ${if (useKmh) "km/h" else "mph"}", Icons.Rounded.Bolt)
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Black.copy(alpha = 0.05f))
+                            MetricRow("Total Points", points.size.toString(), Icons.Rounded.LocationOn)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }, "Share trip"))
+                        },
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MospeeTerracotta),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                    ) {
+                        Icon(Icons.Rounded.Share, contentDescription = null)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Share Trip Summary", fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth()) {
+                        Text("View History", color = Color.Gray)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(40.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SummaryStatItem(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun SummaryStatItem(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
     Surface(
-        modifier = Modifier.width(140.dp),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = MospeeTerracottaLight
     ) {
@@ -228,6 +288,8 @@ private fun SummaryMap(points: List<LocationPoint>) {
     OpenStreetMapView(
         modifier = Modifier.fillMaxSize(),
         center = geoPoints.first(),
+        startPoint = geoPoints.firstOrNull(),
+        endPoint = geoPoints.lastOrNull(),
         zoom = 15.0,
         routePoints = geoPoints,
         showRouteMarkers = true,

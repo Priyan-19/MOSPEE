@@ -25,6 +25,9 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -33,9 +36,11 @@ class LocationForegroundService : Service() {
     @Inject lateinit var repository: TripRepository
     @Inject lateinit var locationManager: LocationManager
     @Inject lateinit var prefsRepository: UserPreferencesRepository
+    @Inject lateinit var locationClient: com.mospee.location.LocationClient
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var locationJob: Job? = null
 
     private var currentTripId: Long = -1L
     private var lastLocation: Location? = null
@@ -46,7 +51,6 @@ class LocationForegroundService : Service() {
     private var isPaused: Boolean = false
     private var useKmh: Boolean = true
 
-    private lateinit var locationListener: LocationListener
 
     companion object {
         // Shared live data from service → ViewModels
@@ -60,6 +64,8 @@ class LocationForegroundService : Service() {
         val topSpeedKmh: Float = 0f,
         val distanceMeters: Float = 0f,
         val elapsedSeconds: Long = 0L,
+        val currentLat: Double? = null,
+        val currentLng: Double? = null,
         val isTracking: Boolean = false,
         val isPaused: Boolean = false,
         val tripId: Long = -1L
@@ -70,7 +76,6 @@ class LocationForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        setupLocationListener()
         observePreferences()
     }
 
@@ -123,44 +128,17 @@ class LocationForegroundService : Service() {
         _liveTripData.value = ServiceTripState(isTracking = true, tripId = tripId)
     }
 
-    @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
-        // Only use GPS provider for tracking speed. Network provider is too inaccurate for speed.
-        val provider = LocationManager.GPS_PROVIDER
-        if (locationManager.isProviderEnabled(provider)) {
-            locationManager.requestLocationUpdates(
-                provider,
-                Constants.LOCATION_UPDATE_INTERVAL_MS,
-                0f, // Use 0 displacement for smoother speed updates
-                locationListener,
-                Looper.getMainLooper()
-            )
-
-            runCatching {
-                locationManager.getLastKnownLocation(provider)
-            }.getOrNull()?.let { lastKnown ->
-                onNewLocation(lastKnown)
+        locationJob?.cancel()
+        locationJob = locationClient
+            .getLocationUpdates(Constants.LOCATION_UPDATE_INTERVAL_MS)
+            .onEach { location ->
+                if (!isPaused) {
+                    onNewLocation(location)
+                }
             }
-        } else {
-            // Fallback to Network if GPS is off, but warn user or handle gracefully
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER,
-                    Constants.LOCATION_UPDATE_INTERVAL_MS,
-                    0f,
-                    locationListener,
-                    Looper.getMainLooper()
-                )
-            }
-        }
-    }
-
-    private fun setupLocationListener() {
-        locationListener = LocationListener { location ->
-            if (!isPaused) {
-                onNewLocation(location)
-            }
-        }
+            .catch { e -> e.printStackTrace() }
+            .launchIn(serviceScope)
     }
 
     private fun onNewLocation(location: Location) {
@@ -170,43 +148,60 @@ class LocationForegroundService : Service() {
         var speedKmh = LocationUtils.msToKmh(location.speed)
         if (speedKmh < 1.5f) speedKmh = 0f
 
-        // Accumulate distance
+        // Accumulate distance & Update stats
         lastLocation?.let { last ->
             val delta = location.distanceTo(last)
-            if (delta > 0 && delta < Constants.MAX_CONSECUTIVE_DISTANCE_M) {
+            // MINIMUM MOVEMENT FILTER (5 meters) for polyline smoothing as requested
+            if (delta >= 5.0f && delta < Constants.MAX_CONSECUTIVE_DISTANCE_M) {
                 totalDistanceMeters += delta
+                
+                // Save to DB ONLY when moved significantly to avoid "piles" of points
+                ioScope.launch {
+                    repository.saveLocationPoint(
+                        LocationPoint(
+                            tripId = currentTripId,
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            speedKmh = speedKmh,
+                            accuracyMeters = location.accuracy,
+                            timestamp = location.time
+                        )
+                    )
+                }
+            }
+        } ?: run {
+            // Initial point, always save
+            ioScope.launch {
+                repository.saveLocationPoint(
+                    LocationPoint(
+                        tripId = currentTripId,
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        speedKmh = speedKmh,
+                        accuracyMeters = location.accuracy,
+                        timestamp = location.time
+                    )
+                )
             }
         }
 
-        // Update speed stats
+        // Update speed stats (even if didn't move 5m, speed can still change)
         if (speedKmh > topSpeedKmh) topSpeedKmh = speedKmh
         speedReadings.add(speedKmh)
         val avgSpeedKmh = if (speedReadings.isNotEmpty()) speedReadings.average().toFloat() else 0f
 
         lastLocation = location
 
-        // Save to DB
-        ioScope.launch {
-            repository.saveLocationPoint(
-                LocationPoint(
-                    tripId = currentTripId,
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    speedKmh = speedKmh,
-                    accuracyMeters = location.accuracy,
-                    timestamp = location.time
-                )
-            )
-        }
-
-        // Emit live update
+        // Emit live update for UI
         val elapsed = (System.currentTimeMillis() - tripStartTime) / 1000L
         _liveTripData.value = _liveTripData.value.copy(
             currentSpeedKmh = speedKmh,
             avgSpeedKmh = avgSpeedKmh,
             topSpeedKmh = topSpeedKmh,
             distanceMeters = totalDistanceMeters,
-            elapsedSeconds = elapsed
+            elapsedSeconds = elapsed,
+            currentLat = location.latitude,
+            currentLng = location.longitude
         )
 
         // Update notification
@@ -255,7 +250,7 @@ class LocationForegroundService : Service() {
             }
         }
 
-        runCatching { locationManager.removeUpdates(locationListener) }
+        locationJob?.cancel()
         _liveTripData.value = ServiceTripState(isTracking = false, tripId = currentTripId)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -264,7 +259,6 @@ class LocationForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        runCatching { locationManager.removeUpdates(locationListener) }
     }
 
     // ── Notification ──────────────────────────────────────────────────────────
