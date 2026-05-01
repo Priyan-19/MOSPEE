@@ -22,11 +22,15 @@ sealed class SummaryUiState {
 class TripSummaryViewModel @Inject constructor(
     private val getTripDetailsUseCase: GetTripDetailsUseCase,
     private val deleteTripUseCase: DeleteTripUseCase,
-    private val prefsRepository: UserPreferencesRepository
+    private val prefsRepository: UserPreferencesRepository,
+    private val weatherRepository: com.mospee.data.repository.WeatherRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SummaryUiState>(SummaryUiState.Loading)
     val uiState: StateFlow<SummaryUiState> = _uiState.asStateFlow()
+
+    private val _weather = MutableStateFlow<com.mospee.domain.model.WeatherInfo?>(null)
+    val weather: StateFlow<com.mospee.domain.model.WeatherInfo?> = _weather.asStateFlow()
 
     val useKmh: StateFlow<Boolean> = prefsRepository.useKmh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -38,6 +42,11 @@ class TripSummaryViewModel @Inject constructor(
                 val (trip, points) = getTripDetailsUseCase(tripId)
                 if (trip != null) {
                     _uiState.value = SummaryUiState.Success(trip, points)
+                    // Fetch weather for end location
+                    if (points.isNotEmpty()) {
+                        val last = points.last()
+                        _weather.value = weatherRepository.getWeather(last.latitude, last.longitude)
+                    }
                 } else {
                     _uiState.value = SummaryUiState.Error("Trip not found")
                 }

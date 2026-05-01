@@ -35,10 +35,15 @@ sealed class HomeUiState {
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getLastTripUseCase: GetLastTripUseCase,
+    private val getAllTripsUseCase: com.mospee.domain.usecase.GetAllTripsUseCase,
     private val prefsRepository: UserPreferencesRepository,
     private val locationManager: LocationManager,
-    private val locationClient: com.mospee.location.LocationClient
+    private val locationClient: com.mospee.location.LocationClient,
+    private val weatherRepository: com.mospee.data.repository.WeatherRepository
 ) : ViewModel() {
+
+    private val _weather = MutableStateFlow<com.mospee.domain.model.WeatherInfo?>(null)
+    val weather = _weather.asStateFlow()
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -68,6 +73,9 @@ class HomeViewModel @Inject constructor(
         .map { it.isTracking }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val liveTripState = LocationForegroundService.liveTripData
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LocationForegroundService.ServiceTripState())
+
     val elapsedSeconds: StateFlow<Long> = LocationForegroundService.liveTripData
         .map { it.elapsedSeconds }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
@@ -81,18 +89,41 @@ class HomeViewModel @Inject constructor(
     val overspeedEnabled: StateFlow<Boolean> = prefsRepository.overspeedEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val overspeedThreshold: StateFlow<Float> = prefsRepository.overspeedThreshold
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 120f)
+
     val darkMode: StateFlow<Boolean> = prefsRepository.darkMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val allTrips: StateFlow<List<Trip>> = getAllTripsUseCase()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val totalDistanceMeters: StateFlow<Float> = allTrips
+        .map { list -> list.sumOf { it.distanceMeters.toDouble() }.toFloat() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+    val totalDurationSeconds: StateFlow<Long> = allTrips
+        .map { list -> list.sumOf { it.durationSeconds } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    val overallAvgSpeedKmh: StateFlow<Float> = allTrips
+        .map { list -> if (list.isNotEmpty()) list.map { it.avgSpeedKmh }.average().toFloat() else 0f }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+    private val _heading = MutableStateFlow(0f)
+    val heading: StateFlow<Float> = _heading.asStateFlow()
 
     init {
         loadLastTrip()
         startLocationUpdates()
-        // Automatically refresh last trip when tracking stops
+        // Automatically refresh last trip only when tracking stops
         viewModelScope.launch {
+            var wasTracking = false
             LocationForegroundService.liveTripData.collect { state ->
-                if (!state.isTracking) {
+                if (wasTracking && !state.isTracking) {
                     loadLastTrip()
                 }
+                wasTracking = state.isTracking
             }
         }
     }
@@ -100,12 +131,28 @@ class HomeViewModel @Inject constructor(
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
         locationClient
-            .getLocationUpdates(5000L) // 5 seconds for Home screen is enough
+            .getLocationUpdates(10000L) // 10 seconds for Home screen is enough
             .onEach { location ->
                 _userLocation.value = GeoPoint(location.latitude, location.longitude)
+                
+                // Fetch weather if null
+                if (_weather.value == null) {
+                    fetchWeather(location.latitude, location.longitude)
+                }
+                
+                // Use bearing for heading if speed is sufficient
+                if (location.hasBearing() && location.speed > 1.0) {
+                    _heading.value = location.bearing
+                }
             }
             .catch { e -> e.printStackTrace() }
             .launchIn(viewModelScope)
+    }
+
+    fun fetchWeather(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            _weather.value = weatherRepository.getWeather(lat, lon)
+        }
     }
 
     fun loadLastTrip() {
@@ -161,6 +208,10 @@ class HomeViewModel @Inject constructor(
 
     fun setOverspeedEnabled(value: Boolean) = viewModelScope.launch {
         prefsRepository.setOverspeedEnabled(value)
+    }
+
+    fun setOverspeedThreshold(value: Float) = viewModelScope.launch {
+        prefsRepository.setOverspeedThreshold(value)
     }
 
     fun setDarkMode(value: Boolean) = viewModelScope.launch {

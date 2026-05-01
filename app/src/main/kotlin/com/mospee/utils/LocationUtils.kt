@@ -18,7 +18,8 @@ object LocationUtils {
     }
 
     fun isLocationValid(newLocation: Location, lastLocation: Location?): Boolean {
-        if (newLocation.accuracy > 20f) return false
+        // Enforce stricter accuracy (15m radius) to filter out indoor multipath drift
+        if (newLocation.hasAccuracy() && newLocation.accuracy > 15f) return false
         if (lastLocation == null) return true
 
         val distance = lastLocation.distanceTo(newLocation)
@@ -37,11 +38,7 @@ object LocationUtils {
         val hours = TimeUnit.SECONDS.toHours(seconds)
         val minutes = TimeUnit.SECONDS.toMinutes(seconds) % 60
         val secs = seconds % 60
-        return if (hours > 0) {
-            String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, secs)
-        } else {
-            String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
-        }
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, secs)
     }
 
     fun formatDistance(meters: Float, useKmh: Boolean): String {
@@ -65,6 +62,12 @@ object LocationUtils {
 
     fun msToKmh(ms: Float): Float = ms * 3.6f
     fun kmhToMph(kmh: Float): Float = kmh * 0.621371f
+
+    fun getDirectionString(heading: Float): String {
+        val directions = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+        val index = ((heading + 22.5f) % 360f / 45f).toInt()
+        return directions[if (index < 0) 0 else if (index > 7) 0 else index]
+    }
 }
 
 fun Context.hasLocationPermission(): Boolean {

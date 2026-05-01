@@ -47,6 +47,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize OSMDroid configuration
+        org.osmdroid.config.Configuration.getInstance().load(
+            applicationContext,
+            android.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        )
+        
         enableEdgeToEdge()
         
         setContent {
@@ -60,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     if (startupError != null) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Startup Error: ${startupError}", color = MospeeRed, modifier = Modifier.padding(20.dp))
+                            Text("Startup Error: ${startupError}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(20.dp))
                         }
                     } else {
                         PermissionGate {
@@ -110,10 +117,10 @@ fun PermissionGate(content: @Composable () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MospeeCream),
+                .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = MospeeTerracotta)
+            CircularProgressIndicator(color = StPrimary)
         }
     }
 }

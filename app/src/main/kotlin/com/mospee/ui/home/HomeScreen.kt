@@ -1,5 +1,9 @@
 package com.mospee.ui.home
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,612 +11,750 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.border
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mospee.domain.model.Trip
 import com.mospee.ui.components.*
 import com.mospee.ui.theme.*
 import com.mospee.utils.LocationUtils
-import org.osmdroid.util.GeoPoint
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @Composable
 fun HomeScreen(
     onStartTrip: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenTripDetails: (Long) -> Unit,
-    onOpenSettings: () -> Unit = {},
-    viewModel: HomeViewModel = hiltViewModel()
+    onOpenSettings: () -> Unit,
+    onOpenStats: () -> Unit,
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
-    val zoomLevel by viewModel.zoomLevel.collectAsStateWithLifecycle()
-    val mapType by viewModel.mapType.collectAsStateWithLifecycle()
-    val showTraffic by viewModel.showTraffic.collectAsStateWithLifecycle()
-    val showTransit by viewModel.showTransit.collectAsStateWithLifecycle()
-    val showBicycling by viewModel.showBicycling.collectAsStateWithLifecycle()
-    val meterType by viewModel.meterType.collectAsStateWithLifecycle()
+    val isTracking by viewModel.isTracking.collectAsStateWithLifecycle()
+    val liveData by viewModel.liveTripState.collectAsStateWithLifecycle()
     val useKmh by viewModel.useKmh.collectAsStateWithLifecycle()
-    val isTracking by viewModel.isTracking.collectAsStateWithLifecycle() // Kept for START/RESUME button text
+    val overspeedEnabled by viewModel.overspeedEnabled.collectAsStateWithLifecycle()
+    val overspeedThreshold by viewModel.overspeedThreshold.collectAsStateWithLifecycle()
+    val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
+    val allTrips by viewModel.allTrips.collectAsStateWithLifecycle()
+    val heading  by viewModel.heading.collectAsStateWithLifecycle()
+    val totalDistMeters by viewModel.totalDistanceMeters.collectAsStateWithLifecycle()
+    val totalTimeSeconds by viewModel.totalDurationSeconds.collectAsStateWithLifecycle()
+    val overallAvgKmh by viewModel.overallAvgSpeedKmh.collectAsStateWithLifecycle()
 
-    var showMapTypeSheet by remember { mutableStateOf(false) }
+    val displaySpeed = if (useKmh) liveData.currentSpeedKmh else LocationUtils.kmhToMph(liveData.currentSpeedKmh)
+    val displayDist = if (useKmh) liveData.distanceMeters / 1000f else liveData.distanceMeters * 0.000621371f
+    val displayAvg = if (useKmh) liveData.avgSpeedKmh else LocationUtils.kmhToMph(liveData.avgSpeedKmh)
+    val displayTop = if (useKmh) liveData.topSpeedKmh else LocationUtils.kmhToMph(liveData.topSpeedKmh)
+    val unit = if (useKmh) "km/h" else "mph"
+    val distUnit = if (useKmh) "km" else "mi"
 
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
-            HomeBottomNav(
+            SpeedoBottomNav(
                 currentRoute = "home",
+                onHomeClick = { },
+                onLiveClick = onStartTrip,
                 onHistoryClick = onOpenHistory,
+                onStatsClick = onOpenStats,
                 onSettingsClick = onOpenSettings
             )
-        },
-        containerColor = MospeeCream
+        }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Map Section (Top 50%)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                OpenStreetMapView(
+            if (darkMode) {
+                Image(
+                    painter = painterResource(id = com.mospee.R.drawable.mospee_bg),
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    center = userLocation ?: GeoPoint(12.9716, 77.5946),
-                    userLocation = userLocation,
-                    zoom = zoomLevel,
-                    mapType = mapType,
-                    followCenter = true,
-                    enableGestures = true
+                    contentScale = ContentScale.Crop
                 )
-
-                // Map UI Elements (All in one column to prevent overlap)
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MapActionButton(Icons.Rounded.MyLocation, onClick = { viewModel.refreshLocation() })
-                    MapActionButton(
-                        icon = Icons.Rounded.Layers,
-                        onClick = { showMapTypeSheet = true }
-                    )
-                    MapActionButton(
-                        icon = if (meterType == "digital") Icons.Rounded.Speed else Icons.Rounded.AvTimer,
-                        onClick = { viewModel.toggleMeterType() }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    MapActionButton(Icons.Rounded.Add, size = 42.dp, onClick = { viewModel.zoomIn() })
-                    MapActionButton(Icons.Rounded.Remove, size = 42.dp, onClick = { viewModel.zoomOut() })
-                }
-
-                // GPS Disabled Warning
-                if (!viewModel.isGpsEnabled()) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MospeeRed.copy(alpha = 0.9f),
-                        tonalElevation = 4.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Rounded.LocationOff, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("GPS is turned off", style = MaterialTheme.typography.labelMedium, color = Color.White)
-                        }
-                    }
-                }
-
-                ActiveTripOverlaySection(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
-            }
-
-
-            // Controls Section (Bottom 50%)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.2f),
-                color = MospeeCream,
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            ) {
-                Column(
+                // Dark overlay for dark mode
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .background(Color.Black.copy(alpha = 0.5f))
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = com.mospee.R.drawable.mospee_light_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                // Light overlay for light mode to ensure text contrast
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White.copy(alpha = 0.4f))
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+            // ── Hero Section: MOSPEE Branding & Primary Actions ────────────────
+            GlassyCard(
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = if (darkMode) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.7f)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    SpeedometerSection(meterType = meterType, useKmh = useKmh)
-
-                    Text(
-                        text = "Ready for your next journey?",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    GlowButton(
+                    SpeedoTrackLogo()
+                    
+                    Spacer(modifier = Modifier.height(48.dp))
+                    
+                    // Large Primary Action Button
+                    Button(
                         onClick = onStartTrip,
-                        modifier = Modifier.fillMaxWidth(0.8f)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .shadow(12.dp, RoundedCornerShape(32.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent
+                        ),
+                        contentPadding = PaddingValues(0.dp),
+                        shape = RoundedCornerShape(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = if (isTracking) "RESUME TRIP" else "START TRIP",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(0xFF00E676), Color(0xFF00C853))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.PlayArrow, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "START NEW TRIP",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "LAST TRIP SUMMARY",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.Black.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Secondary Outlined Action
+                    OutlinedButton(
+                        onClick = onOpenHistory,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        when (val state = uiState) {
-                            is HomeUiState.Ready -> LastTripCard(
-                                state.lastTrip,
-                                onClick = { 
-                                    state.lastTrip?.id?.let { onOpenTripDetails(it) } ?: onOpenHistory() 
-                                }
-                            )
-                            is HomeUiState.Loading -> CircularProgressIndicator(color = MospeeTerracotta)
-                            else -> LastTripCard(null, onOpenHistory)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.History, null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("VIEW HISTORY", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
-        }
 
-        if (showMapTypeSheet) {
-            MapTypeBottomSheet(
-                onDismiss = { showMapTypeSheet = false },
-                currentMapType = mapType,
-                onSetMapType = { viewModel.setMapType(it) },
-                showTraffic = showTraffic,
-                onToggleTraffic = { viewModel.toggleTraffic() },
-                showTransit = showTransit,
-                onToggleTransit = { viewModel.toggleTransit() },
-                showBicycling = showBicycling,
-                onToggleBicycling = { viewModel.toggleBicycling() }
-            )
-        }
-    }
-}
-
-@Composable
-private fun MapActionButton(
-    icon: ImageVector, 
-    size: androidx.compose.ui.unit.Dp = 44.dp,
-    onClick: () -> Unit = {}
-) {
-    Surface(
-        modifier = Modifier.size(size),
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.9f),
-        shadowElevation = 4.dp
-    ) {
-        IconButton(onClick = onClick) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color.Gray)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MapTypeBottomSheet(
-    onDismiss: () -> Unit,
-    currentMapType: String,
-    onSetMapType: (String) -> Unit,
-    showTraffic: Boolean,
-    onToggleTraffic: () -> Unit,
-    showTransit: Boolean,
-    onToggleTransit: () -> Unit,
-    showBicycling: Boolean,
-    onToggleBicycling: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.LightGray) }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 40.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Map type",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Rounded.Close, contentDescription = "Close", modifier = Modifier.size(20.dp))
+            // ── Live Trip Snapshot (Only when tracking) ────────────────────────
+            if (isTracking) {
+                GlassyCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        BigStatItem("%.1f".format(displaySpeed), "CURRENT", unit)
+                        BigStatItem("%.2f".format(displayDist), "DISTANCE", distUnit)
+                        BigStatItem(LocationUtils.formatDuration(liveData.elapsedSeconds), "TIME", "")
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                MapTypeOption(
-                    label = "Default",
-                    isSelected = currentMapType == "default",
-                    onClick = { onSetMapType("default") },
-                    iconRes = Icons.Rounded.Map
+            // ── Secondary Actions Row ────────────────────────────────────────
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OverspeedAlertCard(
+                    modifier = Modifier.weight(1f),
+                    enabled = overspeedEnabled,
+                    threshold = overspeedThreshold,
+                    unit = unit,
+                    onToggle = { viewModel.setOverspeedEnabled(it) },
+                    onThresholdChange = { viewModel.setOverspeedThreshold(it) }
                 )
-                MapTypeOption(
-                    label = "Satellite",
-                    isSelected = currentMapType == "satellite",
-                    onClick = { onSetMapType("satellite") },
-                    iconRes = Icons.Rounded.Satellite
-                )
-                MapTypeOption(
-                    label = "Terrain",
-                    isSelected = currentMapType == "terrain",
-                    onClick = { onSetMapType("terrain") },
-                    iconRes = Icons.Rounded.Terrain
+                SettingsQuickCard(
+                    modifier = Modifier.weight(1f),
+                    useKmh = useKmh,
+                    onUnitChange = { viewModel.setUseKmh(it) },
+                    darkMode = darkMode,
+                    onThemeChange = { viewModel.setDarkMode(it) }
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "Map details",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            // ── Analytics & History Section ──────────────────────────────────
+            LifetimeStatsCard(
+                totalDist = LocationUtils.formatDistance(totalDistMeters, useKmh),
+                totalTime = LocationUtils.formatDuration(totalTimeSeconds),
+                avgSpeed = LocationUtils.formatSpeed(overallAvgKmh, useKmh),
+                trips = allTrips
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            val lastTrip = (uiState as? HomeUiState.Ready)?.lastTrip
+            if (lastTrip != null) {
+                LastTripSummaryCompactCard(lastTrip, useKmh) {
+                    onOpenTripDetails(lastTrip.id)
+                }
+            }
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                AnalyticsCompactCard(modifier = Modifier.weight(1.2f), trips = allTrips)
+                CompassCard(modifier = Modifier.weight(0.8f), heading = heading)
+            }
 
-            Row(
+            CurrentTripStatsCard(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                MapDetailOption(
-                    label = "Public transport", 
-                    icon = Icons.Rounded.DirectionsBus,
-                    isSelected = showTransit,
-                    onClick = onToggleTransit
-                )
-                MapDetailOption(
-                    label = "Traffic", 
-                    icon = Icons.Rounded.Traffic,
-                    isSelected = showTraffic,
-                    onClick = onToggleTraffic
-                )
-                MapDetailOption(
-                    label = "Bicycling", 
-                    icon = Icons.Rounded.DirectionsBike,
-                    isSelected = showBicycling,
-                    onClick = onToggleBicycling
-                )
-                MapDetailOption(
-                    label = "3D", 
-                    icon = Icons.Rounded.ViewInAr,
-                    isSelected = false,
-                    isEnabled = false
-                )
+                topSpeed = "%.1f %s".format(displayTop, unit),
+                avgSpeed = "%.1f %s".format(displayAvg, unit),
+                distance = "%.2f %s".format(displayDist, distUnit),
+                time = LocationUtils.formatDuration(liveData.elapsedSeconds)
+            )
+
+            TripHistoryCompactCard(
+                modifier = Modifier.fillMaxWidth(), 
+                trips = allTrips.take(3), 
+                useKmh = useKmh,
+                onOpenHistory = onOpenHistory,
+                onOpenTrip = onOpenTripDetails
+            )
+
+            // ── Quick Action Grid ───────────────────────────────────────────
+            val context = LocalContext.current
+            val weatherInfo by viewModel.weather.collectAsState()
+            val weatherLabel = weatherInfo?.let { "Weather\n${it.temperature}°C" } ?: "Weather\n--"
+            
+            Spacer(modifier = Modifier.height(6.dp))
+            BottomActionsGrid(
+                modifier = Modifier.fillMaxWidth(),
+                weatherLabel = weatherLabel,
+                onNearbyFuel = {
+                    val gmmIntentUri = Uri.parse("geo:0,0?q=fuel")
+                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                    mapIntent.setPackage("com.google.android.apps.maps")
+                    context.startActivity(mapIntent)
+                },
+                onWeather = {
+                    Toast.makeText(context, "Fetching real-time weather...", Toast.LENGTH_SHORT).show()
+                },
+                onShareTrip = {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "I'm tracking my trip with MOSPEE! Current speed: %.1f %s".format(displaySpeed, unit))
+                        type = "text/plain"
+                    }
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                },
+                onEmergency = {
+                    val intent = Intent(Intent.ACTION_DIAL)
+                    intent.data = Uri.parse("tel:911")
+                    context.startActivity(intent)
+                }
+            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+}
+
+@Composable
+fun LastTripSummaryCompactCard(trip: Trip, useKmh: Boolean, onClick: () -> Unit) {
+    GlassyCard(modifier = Modifier.fillMaxWidth()) {
+        Text("LAST TRIP SUMMARY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(12.dp))
+        // Small map path (Simplified visual)
+        Canvas(modifier = Modifier.fillMaxWidth().height(60.dp)) {
+            val path = Path().apply {
+                moveTo(0f, size.height * 0.7f)
+                lineTo(size.width * 0.2f, size.height * 0.4f)
+                lineTo(size.width * 0.5f, size.height * 0.6f)
+                lineTo(size.width * 0.8f, size.height * 0.2f)
+                lineTo(size.width, size.height * 0.3f)
+            }
+            drawPath(path, StAccent, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            StatText(LocationUtils.formatDistance(trip.distanceMeters, useKmh), "DISTANCE")
+            StatText(LocationUtils.formatDuration(trip.durationSeconds), "TIME")
+            StatText(LocationUtils.formatSpeed(trip.avgSpeedKmh, useKmh), "AVG SPEED")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(40.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = StAccent),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("View Detailed Summary", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            Icon(Icons.Rounded.ChevronRight, null, modifier = Modifier.size(16.dp), tint = Color.White)
+        }
+    }
+}
+
+@Composable
+fun StatText(value: String, label: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun BigStatItem(value: String, label: String, unit: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), letterSpacing = 1.sp)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+            if (unit.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(unit, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
             }
         }
     }
 }
 
 @Composable
-private fun MapTypeOption(
+fun SmallCustomSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val trackColor by androidx.compose.animation.animateColorAsState(if (checked) StPrimary else MaterialTheme.colorScheme.surfaceVariant)
+    val thumbOffset by androidx.compose.animation.core.animateDpAsState(if (checked) 16.dp else 2.dp)
+    
+    Box(
+        modifier = Modifier
+            .width(36.dp)
+            .height(20.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(trackColor)
+            .clickable { onCheckedChange(!checked) },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbOffset)
+                .size(16.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+        )
+    }
+}
+
+@Composable
+fun OverspeedAlertCard(
+    modifier: Modifier = Modifier, 
+    enabled: Boolean, 
+    threshold: Float,
+    unit: String, 
+    onToggle: (Boolean) -> Unit,
+    onThresholdChange: (Float) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        var inputValue by remember { mutableStateOf(threshold.toInt().toString()) }
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Set Overspeed Alert") },
+            text = {
+                OutlinedTextField(
+                    value = inputValue,
+                    onValueChange = { if (it.isEmpty() || it.all { char -> char.isDigit() }) inputValue = it },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    label = { Text("Limit ($unit)") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StPrimary,
+                        focusedLabelColor = StPrimary,
+                        cursorColor = StPrimary
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    val newVal = inputValue.toFloatOrNull()
+                    if (newVal != null && newVal > 0) {
+                        onThresholdChange(newVal)
+                    }
+                    showDialog = false 
+                }) { Text("Save", color = StPrimary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancel", color = MaterialTheme.colorScheme.onSurface) }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    }
+
+    GlassyCard(
+        modifier = modifier,
+        borderColor = if (enabled) StError.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Warning, null, tint = if (enabled) StError else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("ALERT", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+            SmallCustomSwitch(
+                checked = enabled,
+                onCheckedChange = onToggle
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { showDialog = true }
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Thres: ${threshold.toInt()} $unit", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun AnalyticsCompactCard(modifier: Modifier = Modifier, trips: List<Trip>) {
+    // Calculate simple speed brackets for analytics
+    val total = trips.size.coerceAtLeast(1)
+    val slow = trips.count { it.avgSpeedKmh < 20 }.toFloat() / total
+    val mid = trips.count { it.avgSpeedKmh in 20.0..45.0 }.toFloat() / total
+    val fast = trips.count { it.avgSpeedKmh > 45 }.toFloat() / total
+
+    GlassyCard(modifier = modifier) {
+        Text("SPEED ANALYTICS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AnalyticsRow(SpeedGreen, "City (0-20)", "${(slow * 100).toInt()}%")
+            AnalyticsRow(StSecondary, "Urban (20-45)", "${(mid * 100).toInt()}%")
+            AnalyticsRow(StWarning, "High (45+)", "${(fast * 100).toInt()}%")
+        }
+    }
+}
+
+@Composable
+fun SettingsQuickCard(
+    modifier: Modifier = Modifier,
+    useKmh: Boolean,
+    onUnitChange: (Boolean) -> Unit,
+    darkMode: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
+    val isDark = LocalDarkMode.current
+    GlassyCard(
+        modifier = modifier,
+        contentPadding = PaddingValues(10.dp),
+        containerColor = if (isDark) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.8f)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Unit", style = MaterialTheme.typography.labelSmall)
+                Row(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                    Text(
+                        "KM",
+                        modifier = Modifier.clickable { onUnitChange(true) }.background(if (useKmh) StPrimary else Color.Transparent).padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (useKmh) Color.Black else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "MI",
+                        modifier = Modifier.clickable { onUnitChange(false) }.background(if (!useKmh) StPrimary else Color.Transparent).padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (!useKmh) Color.Black else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Dark", style = MaterialTheme.typography.labelSmall)
+                Switch(checked = darkMode, onCheckedChange = onThemeChange, modifier = Modifier.scale(0.6f))
+            }
+        }
+    }
+}
+
+@Composable
+fun AnalyticsRow(color: Color, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun TripHistoryCompactCard(
+    modifier: Modifier = Modifier, 
+    trips: List<Trip>, 
+    useKmh: Boolean,
+    onOpenHistory: () -> Unit,
+    onOpenTrip: (Long) -> Unit
+) {
+    GlassyCard(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("RECENT TRIPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text("VIEW ALL", style = MaterialTheme.typography.labelSmall, color = StAccent, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onOpenHistory() })
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        if (trips.isEmpty()) {
+            Text("No trips recorded yet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            trips.forEachIndexed { index, trip ->
+                val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                HistoryRow(
+                    date = sdf.format(Date(trip.startTime)),
+                    dist = LocationUtils.formatDistance(trip.distanceMeters, useKmh),
+                    time = LocationUtils.formatDuration(trip.durationSeconds),
+                    color = if (index % 2 == 0) StPrimary else StSecondary,
+                    onClick = { onOpenTrip(trip.id) }
+                )
+                if (index < trips.size - 1) Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun HistoryRow(date: String, dist: String, time: String, color: Color, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClick() }) {
+        Icon(Icons.Rounded.Route, null, tint = color, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(date, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text("$dist • $time", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+    }
+}
+
+@Composable
+fun CompassCard(modifier: Modifier = Modifier, heading: Float) {
+    val outlineColor = MaterialTheme.colorScheme.outline
+    GlassyCard(modifier = modifier) {
+        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.size(44.dp)) {
+                drawCircle(outlineColor.copy(alpha = 0.3f), style = Stroke(1.dp.toPx()))
+                rotate(heading) {
+                    val path = Path().apply {
+                        moveTo(size.width / 2, 0f)
+                        lineTo(size.width * 0.3f, size.height)
+                        lineTo(size.width / 2, size.height * 0.8f)
+                        lineTo(size.width * 0.7f, size.height)
+                        close()
+                    }
+                    drawPath(path, StPrimary)
+                }
+            }
+        }
+        val direction = LocationUtils.getDirectionString(heading)
+        Text("$direction ${heading.toInt()}°", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+fun SpeedoBottomNav(
+    currentRoute: String,
+    onHomeClick: () -> Unit,
+    onLiveClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onStatsClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = if (LocalDarkMode.current) MaterialTheme.colorScheme.surface else Color.White.copy(alpha = 0.9f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
+    ) {
+        Row(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SpeedoNavItem(
+                icon = Icons.Rounded.Home,
+                label = "Home",
+                isSelected = currentRoute == "home",
+                onClick = onHomeClick
+            )
+            SpeedoNavItem(
+                icon = Icons.Rounded.Speed,
+                label = "Live",
+                isSelected = currentRoute == "live",
+                onClick = onLiveClick
+            )
+            SpeedoNavItem(
+                icon = Icons.Rounded.History,
+                label = "History",
+                isSelected = currentRoute == "history",
+                onClick = onHistoryClick
+            )
+            SpeedoNavItem(
+                icon = Icons.Rounded.BarChart,
+                label = "Analytics",
+                isSelected = currentRoute == "statistics",
+                onClick = onStatsClick
+            )
+            SpeedoNavItem(
+                icon = Icons.Rounded.Settings,
+                label = "Settings",
+                isSelected = currentRoute == "settings",
+                onClick = onSettingsClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeedoNavItem(
+    icon: ImageVector,
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    iconRes: ImageVector,
-    isEnabled: Boolean = true
+    onClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .alpha(if (isEnabled) 1f else 0.4f)
-            .clickable(enabled = isEnabled) { onClick() }
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (isSelected) MospeeTerracottaLight else Color(0xFFF5F5F5))
-                .border(
-                    width = 2.dp,
-                    color = if (isSelected) MospeeTerracotta else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = iconRes,
-                contentDescription = label,
-                tint = if (isSelected) MospeeTerracotta else Color.Gray,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) StPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isSelected) MospeeTerracotta else Color.Black.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) StPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
 
 @Composable
-private fun MapDetailOption(
-    label: String, 
-    icon: ImageVector,
-    isSelected: Boolean = false,
-    isEnabled: Boolean = true,
-    onClick: () -> Unit = {}
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .alpha(if (isEnabled) 1f else 0.4f)
-            .clickable(enabled = isEnabled) { onClick() }
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (isSelected) MospeeTerracottaLight else Color(0xFFF5F5F5))
-                .border(
-                    width = 1.5.dp,
-                    color = if (isSelected) MospeeTerracotta else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon, 
-                contentDescription = label, 
-                tint = if (isSelected) MospeeTerracotta else Color.Gray, 
-                modifier = Modifier.size(24.dp)
-            )
+fun LifetimeStatsCard(totalDist: String, totalTime: String, avgSpeed: String, trips: List<Trip>) {
+    GlassyCard(modifier = Modifier.fillMaxWidth()) {
+        // Visual Activity Graph (Procedural based on real trip count)
+        Box(modifier = Modifier.fillMaxWidth().height(100.dp)) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val path = Path()
+                if (trips.isEmpty()) {
+                    path.moveTo(0f, size.height * 0.8f)
+                    path.lineTo(size.width, size.height * 0.8f)
+                } else {
+                    val step = size.width / (trips.size.coerceAtLeast(2) - 1).toFloat()
+                    trips.reversed().forEachIndexed { i, trip ->
+                        val x = i * step
+                        val y = size.height - (trip.distanceMeters / 1000f).coerceAtMost(size.height)
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                }
+                drawPath(
+                    path,
+                    brush = Brush.verticalGradient(listOf(StPrimary, Color.Transparent)),
+                    style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) MospeeTerracotta else Color.Black.copy(alpha = 0.6f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(60.dp)
-        )
-    }
-}
 
-@Composable
-private fun LastTripCard(trip: Trip?, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        color = MospeeTerracottaLight
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (trip != null) {
-                        SimpleDateFormat("EEEE, h:mm a", Locale.getDefault()).format(Date(trip.startTime))
-                    } else "No recent trips",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Black.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Medium
-                )
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = Color.Black.copy(alpha = 0.3f)
-                )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text(totalDist, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Text("Total Distance", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                TripMetricItem(
-                    icon = Icons.Rounded.LocationOn,
-                    label = "Distance:",
-                    value = trip?.let { LocationUtils.formatDistance(it.distanceMeters, true) } ?: "0 km"
-                )
-                TripMetricItem(
-                    icon = Icons.Rounded.Speed,
-                    label = "Avg Speed:",
-                    value = trip?.let { "%.0f km/h".format(it.avgSpeedKmh) } ?: "0 km/h"
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(totalTime, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Total Time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "tap for details",
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Black.copy(alpha = 0.3f)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(avgSpeed, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Avg Speed", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ElevationItem("Elevation Gain", "0 m", SpeedGreen)
+            ElevationItem("Elevation Loss", "0 m", StSecondary)
         }
     }
 }
 
 @Composable
-private fun TripMetricItem(icon: ImageVector, label: String, value: String) {
+fun ElevationItem(label: String, value: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MospeeTerracotta,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
         Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Black.copy(alpha = 0.4f)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.Black.copy(alpha = 0.8f),
-                fontWeight = FontWeight.Bold
-            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(4.dp))
+                Canvas(modifier = Modifier.size(20.dp, 8.dp)) {
+                    drawPath(Path().apply {
+                        moveTo(0f, size.height)
+                        lineTo(size.width * 0.4f, size.height * 0.3f)
+                        lineTo(size.width * 0.7f, size.height * 0.8f)
+                        lineTo(size.width, 0f)
+                    }, color, style = Stroke(1.5.dp.toPx()))
+                }
+            }
         }
-    }
-}
-
-@Composable
-private fun HomeBottomNav(
-    currentRoute: String,
-    onHistoryClick: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        color = Color.White,
-        shadowElevation = 8.dp
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(Icons.Rounded.Home, "Home", currentRoute == "home", {})
-            BottomNavItem(Icons.Rounded.History, "History", currentRoute == "history", onHistoryClick)
-            BottomNavItem(Icons.Rounded.Settings, "Settings", currentRoute == "settings", onSettingsClick)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(width = 56.dp, height = 32.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (selected) MospeeTerracottaLight else Color.Transparent),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (selected) MospeeTerracotta else Color.Gray,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) MospeeTerracotta else Color.Gray,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
-}
-
-@Composable
-private fun SpeedometerSection(meterType: String, useKmh: Boolean) {
-    val liveTripData by com.mospee.service.LocationForegroundService.liveTripData.collectAsStateWithLifecycle()
-    val currentSpeed = liveTripData.currentSpeedKmh
-    val displaySpeed = if (useKmh) currentSpeed else LocationUtils.kmhToMph(currentSpeed)
-    val unit = if (useKmh) "km/h" else "mph"
-
-    if (meterType == "analog") {
-        Speedometer3D(
-            speed = displaySpeed,
-            unit = unit,
-            modifier = Modifier
-                .size(210.dp)
-                .padding(bottom = 12.dp)
-        )
-    } else {
-        DigitalSpeedometer(
-            speed = displaySpeed,
-            unit = unit,
-            modifier = Modifier.height(160.dp)
-        )
-    }
-}
-
-@Composable
-private fun ActiveTripOverlaySection(
-    modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = hiltViewModel()
-) {
-    val isTracking by viewModel.isTracking.collectAsStateWithLifecycle()
-    val elapsedSeconds by viewModel.elapsedSeconds.collectAsStateWithLifecycle()
-
-    if (isTracking) {
-        TripActiveOverlay(
-            elapsedTime = LocationUtils.formatDuration(elapsedSeconds),
-            modifier = modifier
-        )
     }
 }

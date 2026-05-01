@@ -20,7 +20,8 @@ interface TripRepository {
         distanceMeters: Float,
         avgSpeedKmh: Float,
         topSpeedKmh: Float,
-        durationSeconds: Long
+        durationSeconds: Long,
+        points: List<LocationPoint>? = null
     )
 
     /**

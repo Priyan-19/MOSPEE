@@ -46,10 +46,13 @@ class LocationForegroundService : Service() {
     private var lastLocation: Location? = null
     private var totalDistanceMeters: Float = 0f
     private var topSpeedKmh: Float = 0f
-    private var speedReadings = mutableListOf<Float>()
+    private val speedReadings = mutableListOf<Float>()
+    private val capturedPoints = mutableListOf<com.mospee.domain.model.LocationPoint>()
     private var tripStartTime: Long = 0L
     private var isPaused: Boolean = false
     private var useKmh: Boolean = true
+    private var autoPauseEnabled: Boolean = true
+    private var stationarySeconds: Int = 0
 
 
     companion object {
@@ -86,6 +89,11 @@ class LocationForegroundService : Service() {
                 if (_liveTripData.value.isTracking) {
                     updateNotification()
                 }
+            }
+        }
+        serviceScope.launch {
+            prefsRepository.autoPauseEnabled.collect {
+                autoPauseEnabled = it
             }
         }
     }
@@ -133,64 +141,86 @@ class LocationForegroundService : Service() {
         locationJob = locationClient
             .getLocationUpdates(Constants.LOCATION_UPDATE_INTERVAL_MS)
             .onEach { location ->
+                val speedKmh = LocationUtils.msToKmh(location.speed)
+                
+                // Auto Pause/Resume Logic
+                if (autoPauseEnabled) {
+                    if (speedKmh < 2.5f) {
+                        stationarySeconds++
+                        if (stationarySeconds >= 5 && !isPaused) {
+                            setPaused(true) // Auto Pause
+                        }
+                    } else if (speedKmh >= 3.0f) {
+                        stationarySeconds = 0
+                        if (isPaused) {
+                            setPaused(false) // Auto Resume
+                        }
+                    }
+                }
+
                 if (!isPaused) {
-                    onNewLocation(location)
+                    onNewLocation(location, speedKmh)
                 }
             }
             .catch { e -> e.printStackTrace() }
             .launchIn(serviceScope)
     }
 
-    private fun onNewLocation(location: Location) {
+    private fun onNewLocation(location: Location, speedKmhIn: Float) {
         // Filter noise
         if (!LocationUtils.isLocationValid(location, lastLocation)) return
 
-        var speedKmh = LocationUtils.msToKmh(location.speed)
-        if (speedKmh < 1.5f) speedKmh = 0f
+        // Stricter noise filter for indoor GPS drift
+        var speedKmh = speedKmhIn
+        if (speedKmh < 3.0f) speedKmh = 0f
 
         // Accumulate distance & Update stats
         lastLocation?.let { last ->
             val delta = location.distanceTo(last)
-            // MINIMUM MOVEMENT FILTER (5 meters) for polyline smoothing as requested
-            if (delta >= 5.0f && delta < Constants.MAX_CONSECUTIVE_DISTANCE_M) {
+            
+            // Dynamic threshold: You must move further than the GPS error margin to confirm real movement
+            val minMovement = maxOf(5.0f, location.accuracy)
+            
+            // Only accumulate distance and save points if we're moving and displacement exceeds error margin
+            if (speedKmh > 0f && delta >= minMovement && delta < Constants.MAX_CONSECUTIVE_DISTANCE_M) {
                 totalDistanceMeters += delta
                 
-                // Save to DB ONLY when moved significantly to avoid "piles" of points
-                ioScope.launch {
-                    repository.saveLocationPoint(
-                        LocationPoint(
-                            tripId = currentTripId,
-                            latitude = location.latitude,
-                            longitude = location.longitude,
-                            speedKmh = speedKmh,
-                            accuracyMeters = location.accuracy,
-                            timestamp = location.time
-                        )
-                    )
-                }
-            }
-        } ?: run {
-            // Initial point, always save
-            ioScope.launch {
-                repository.saveLocationPoint(
-                    LocationPoint(
-                        tripId = currentTripId,
-                        latitude = location.latitude,
-                        longitude = location.longitude,
-                        speedKmh = speedKmh,
-                        accuracyMeters = location.accuracy,
-                        timestamp = location.time
-                    )
+                val pt = com.mospee.domain.model.LocationPoint(
+                    tripId = currentTripId,
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    speedKmh = speedKmh,
+                    accuracyMeters = location.accuracy,
+                    timestamp = location.time
                 )
+                capturedPoints.add(pt)
+                ioScope.launch { repository.saveLocationPoint(pt) }
+                lastLocation = location
             }
+            // Removed the `else if (delta >= 1.0f)` block so lastLocation stays firmly anchored 
+            // until a definitive movement is made. This prevents "walking" the reference point indoors.
+        } ?: run {
+            // Initial point
+            val pt = com.mospee.domain.model.LocationPoint(
+                tripId = currentTripId,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                speedKmh = speedKmh,
+                accuracyMeters = location.accuracy,
+                timestamp = location.time
+            )
+            capturedPoints.add(pt)
+            ioScope.launch { repository.saveLocationPoint(pt) }
+            lastLocation = location
         }
 
-        // Update speed stats (even if didn't move 5m, speed can still change)
+        // Update speed stats only if moving
         if (speedKmh > topSpeedKmh) topSpeedKmh = speedKmh
-        speedReadings.add(speedKmh)
+        if (speedKmh > 0f) {
+            speedReadings.add(speedKmh)
+        }
         val avgSpeedKmh = if (speedReadings.isNotEmpty()) speedReadings.average().toFloat() else 0f
 
-        lastLocation = location
 
         // Emit live update for UI
         val elapsed = (System.currentTimeMillis() - tripStartTime) / 1000L
@@ -226,34 +256,44 @@ class LocationForegroundService : Service() {
     // ── Controls ──────────────────────────────────────────────────────────────
 
     private fun togglePause() {
-        isPaused = !isPaused
+        setPaused(!isPaused)
+    }
+
+    private fun setPaused(paused: Boolean) {
+        isPaused = paused
         _liveTripData.value = _liveTripData.value.copy(isPaused = isPaused)
         updateNotification()
     }
 
     private fun stopTracking() {
-        val finalState = _liveTripData.value
+        val finalTripId = currentTripId
         serviceScope.launch {
-            if (currentTripId != -1L) {
+            if (finalTripId != -1L) {
                 val avgSpeed = if (speedReadings.isNotEmpty())
                     speedReadings.average().toFloat() else 0f
                 val duration = (System.currentTimeMillis() - tripStartTime) / 1000L
 
+                // Use the capturedPoints list directly to ensure NOTHING is missed due to async lag
                 repository.stopTrip(
-                    tripId = currentTripId,
+                    tripId = finalTripId,
                     endTime = System.currentTimeMillis(),
                     distanceMeters = totalDistanceMeters,
                     avgSpeedKmh = avgSpeed,
                     topSpeedKmh = topSpeedKmh,
-                    durationSeconds = duration
+                    durationSeconds = duration,
+                    points = capturedPoints.toList()
                 )
+                
+                // Clear for next trip if service reused (though usually stopped)
+                capturedPoints.clear()
             }
+            
+            // Move these INSIDE the coroutine to ensure DB update finishes first
+            locationJob?.cancel()
+            _liveTripData.value = ServiceTripState(isTracking = false, tripId = finalTripId)
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
-
-        locationJob?.cancel()
-        _liveTripData.value = ServiceTripState(isTracking = false, tripId = currentTripId)
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     override fun onDestroy() {

@@ -28,6 +28,9 @@ class UserPreferencesRepository @Inject constructor(
         val DARK_MODE           = booleanPreferencesKey(Constants.PREF_DARK_MODE)
         val OVERSPEED_ENABLED   = booleanPreferencesKey(Constants.PREF_OVERSPEED_ENABLED)
         val OVERSPEED_THRESHOLD = floatPreferencesKey(Constants.PREF_OVERSPEED_THRESHOLD)
+        val VIBRATION_ENABLED   = booleanPreferencesKey("pref_vibration_enabled")
+        val SOUND_ENABLED       = booleanPreferencesKey("pref_sound_enabled")
+        val AUTO_PAUSE_ENABLED  = booleanPreferencesKey("pref_auto_pause_enabled")
         val GPS_SMOOTHING       = booleanPreferencesKey("pref_gps_smoothing")
         val WIFI_SYNC_ONLY      = booleanPreferencesKey("pref_wifi_sync_only")
         val METER_TYPE          = stringPreferencesKey("pref_meter_type")
@@ -48,6 +51,18 @@ class UserPreferencesRepository @Inject constructor(
     val overspeedThreshold: Flow<Float> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
         .map { it[Keys.OVERSPEED_THRESHOLD] ?: Constants.DEFAULT_OVERSPEED_THRESHOLD_KMH }
+
+    val vibrationEnabled: Flow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.VIBRATION_ENABLED] ?: true }
+
+    val soundEnabled: Flow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.SOUND_ENABLED] ?: true }
+
+    val autoPauseEnabled: Flow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[Keys.AUTO_PAUSE_ENABLED] ?: true }
 
     val gpsSmoothing: Flow<Boolean> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -75,6 +90,18 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setOverspeedThreshold(value: Float) {
         dataStore.edit { it[Keys.OVERSPEED_THRESHOLD] = value }
+    }
+
+    suspend fun setVibrationEnabled(value: Boolean) {
+        dataStore.edit { it[Keys.VIBRATION_ENABLED] = value }
+    }
+
+    suspend fun setSoundEnabled(value: Boolean) {
+        dataStore.edit { it[Keys.SOUND_ENABLED] = value }
+    }
+
+    suspend fun setAutoPauseEnabled(value: Boolean) {
+        dataStore.edit { it[Keys.AUTO_PAUSE_ENABLED] = value }
     }
 
     suspend fun setGpsSmoothing(value: Boolean) {

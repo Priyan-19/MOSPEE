@@ -69,6 +69,9 @@ fun OpenStreetMapView(
         }
     }
 
+    val initialZoomSet = remember { androidx.compose.runtime.mutableStateOf(false) }
+    val lastLocationRef = remember { androidx.compose.runtime.mutableStateOf<GeoPoint?>(null) }
+
     val mapView = remember {
         MapView(context).apply {
             setMultiTouchControls(enableGestures)
@@ -111,8 +114,9 @@ fun OpenStreetMapView(
             }
 
             // 2. Update Map State
-            if (view.zoomLevelDouble != zoom) {
+            if (!initialZoomSet.value) {
                 view.controller.setZoom(zoom)
+                initialZoomSet.value = true
             }
             view.setMultiTouchControls(enableGestures)
 
@@ -147,13 +151,19 @@ fun OpenStreetMapView(
                 userMarker.position = userLocation
                 userMarker.isEnabled = true
                 
-                if (followCenter) {
+                if (followCenter && lastLocationRef.value != userLocation) {
                     view.controller.animateTo(userLocation)
+                    lastLocationRef.value = userLocation
+                } else if (!followCenter && lastLocationRef.value == null) {
+                    // Just center once initially when followCenter is false
+                    view.controller.setCenter(userLocation)
+                    lastLocationRef.value = userLocation
                 }
             } else {
                 userMarker.isEnabled = false
-                if (routePoints.isEmpty() && center != null) {
+                if (routePoints.isEmpty() && center != null && lastLocationRef.value == null) {
                     view.controller.setCenter(center)
+                    lastLocationRef.value = center
                 }
             }
 

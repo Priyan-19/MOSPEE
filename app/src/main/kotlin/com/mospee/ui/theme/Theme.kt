@@ -8,7 +8,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -16,59 +17,111 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val MospeeBlue = Color(0xFF1A73E8)
-val MospeeBlueBright = Color(0xFF4D9BFF)
-val MospeeGreen = Color(0xFF00C853)
-val MospeeRed = Color(0xFFE53935)
-val MospeeAmber = Color(0xFFFFC107)
-val MospeeBackground = Color(0xFF0F1117)
-val MospeeSurface = Color(0xFF1E1E2A)
-val MospeeSurfaceAlt = Color(0xFF262A36)
-val MospeeOutline = Color(0xFF454B5C)
-val MospeeTextPrimary = Color(0xFFEAEFF7)
-val MospeeTextSecondary = Color(0xFF9EA7B8)
-val MospeeWhite = Color(0xFFF8FAFF)
-val MospeeCream = Color(0xFFFFF9F2)
-val MospeeTerracotta = Color(0xFFB0644D)
-val MospeeTerracottaLight = Color(0xFFFDEEE9)
-val MospeeBadgeOrange = Color(0xFFFEF0E0)
+val LocalDarkMode = staticCompositionLocalOf { true }
 
-val MospeeNeonGreen = MospeeGreen
-val MospeeNeonBlue = MospeeBlueBright
-val MospeeSurfaceElev = MospeeSurfaceAlt
-val SpeedGreen = MospeeGreen
-val SpeedAmber = MospeeAmber
-val SpeedRed = MospeeRed
+// ── MOSPEE Brand Colors (SpeedoTrack Edition) ───────────────────────────
+// Dark Theme (primary)
+val StBackground    = Color(0xFF0B0E14)   // Deep navy black
+val StSurface       = Color(0xFF131823)   // Card surface
+val StSurfaceAlt    = Color(0xFF1C2433)   // Elevated surface
+val StOutline       = Color(0xFF2D3748).copy(alpha = 0.5f)   // Subtle border
+
+val StPrimary       = Color(0xFF00E676)   // Vibrant neon green
+val StSecondary     = Color(0xFF448AFF)   // Vibrant blue
+val StAccent        = Color(0xFF00E5FF)   // Cyan accent
+val StError         = Color(0xFFFF5252)   // Vibrant red
+val StWarning       = Color(0xFFFFD740)   // Vibrant amber
+val StPurple        = Color(0xFF7C4DFF)   // Deep purple
+
+val StTextPrimary   = Color(0xFFF1F5F9)   // Off-white
+val StTextSecondary = Color(0xFF94A3B8)   // Slate grey
+val StTextMuted     = Color(0xFF64748B)   // Muted slate
+
+// Light Theme equivalents (SpeedoTrack Light)
+val LtBackground    = Color(0xFFF8FAFC)
+val LtSurface       = Color(0xFFFFFFFF)
+val LtSurfaceAlt    = Color(0xFFF1F5F9)
+val LtOutline       = Color(0xFFE2E8F0)
+val LtTextPrimary   = Color(0xFF0F172A)
+val LtTextSecondary = Color(0xFF475569)
+val LtTextMuted     = Color(0xFF94A3B8)
+
+// Speedometer arc colors
+val SpeedGreen      = Color(0xFF00E676)
+val SpeedYellow     = Color(0xFFFFD740)
+val SpeedOrange     = Color(0xFFFFAB40)
+val SpeedRed        = Color(0xFFFF5252)
+
+// Legacy aliases
+val StCoral             = StError
+val StCoralLight        = Color(0xFF2D1408)
+val StGreen             = StPrimary
+val StGreenLight        = Color(0xFF082D1B)
+val StBlue              = StSecondary
+val StRed               = StError
+val StAmber             = StWarning
+val MospeeBlue          = StSecondary
+val MospeeGreen         = StPrimary
+val MospeeRed           = StError
+val MospeeAmber         = StWarning
+val MospeeBackground    = StBackground
+val MospeeSurface       = StSurface
+val MospeeSurfaceAlt    = StSurfaceAlt
+val MospeeOutline       = StOutline
+val MospeeTextPrimary   = StTextPrimary
+val MospeeTextSecondary = StTextSecondary
+val MospeeWhite         = Color(0xFFFFFFFF)
+val MospeeCream         = Color(0xFFF5F5F7)
+val MospeeTerracotta    = StError
+val MospeeTerracottaLight = StCoralLight
+val MospeeBadgeOrange   = Color(0xFF2D1408)
+val MospeeNeonGreen     = StPrimary
+val MospeeNeonBlue      = StSecondary
+val MospeeSurfaceElev   = StSurfaceAlt
+val SpeedAmber          = StWarning
 
 private val DarkColors = darkColorScheme(
-    primary = MospeeBlue,
-    onPrimary = MospeeWhite,
-    primaryContainer = MospeeBlue.copy(alpha = 0.24f),
-    onPrimaryContainer = MospeeWhite,
-    secondary = MospeeGreen,
-    onSecondary = Color.Black,
-    secondaryContainer = MospeeGreen.copy(alpha = 0.22f),
-    onSecondaryContainer = MospeeWhite,
-    tertiary = MospeeAmber,
-    onTertiary = Color.Black,
-    background = MospeeBackground,
-    onBackground = MospeeTextPrimary,
-    surface = MospeeSurface,
-    onSurface = MospeeTextPrimary,
-    surfaceVariant = MospeeSurfaceAlt,
-    onSurfaceVariant = MospeeTextSecondary,
-    outline = MospeeOutline,
-    error = MospeeRed,
-    onError = MospeeWhite
+    primary             = StPrimary,
+    onPrimary           = Color.Black,
+    primaryContainer    = StPrimary.copy(alpha = 0.15f),
+    onPrimaryContainer  = StPrimary,
+    secondary           = StSecondary,
+    onSecondary         = Color.White,
+    secondaryContainer  = StSecondary.copy(alpha = 0.15f),
+    onSecondaryContainer = StSecondary,
+    tertiary            = StAccent,
+    onTertiary          = Color.Black,
+    background          = StBackground,
+    onBackground        = StTextPrimary,
+    surface             = StSurface,
+    onSurface           = StTextPrimary,
+    surfaceVariant      = StSurfaceAlt,
+    onSurfaceVariant    = StTextSecondary,
+    outline             = StOutline,
+    error               = StError,
+    onError             = Color.White
 )
 
 private val LightColors = lightColorScheme(
-    primary = MospeeBlue,
-    onPrimary = MospeeWhite,
-    secondary = MospeeGreen,
-    onSecondary = Color.Black,
-    tertiary = MospeeAmber,
-    onTertiary = Color.Black
+    primary             = StPrimary,
+    onPrimary           = Color.White,
+    primaryContainer    = StPrimary.copy(alpha = 0.1f),
+    onPrimaryContainer  = StPrimary,
+    secondary           = StSecondary,
+    onSecondary         = Color.White,
+    secondaryContainer  = StSecondary.copy(alpha = 0.1f),
+    onSecondaryContainer = StSecondary,
+    tertiary            = StAccent,
+    onTertiary          = Color.Black,
+    background          = LtBackground,
+    onBackground        = LtTextPrimary,
+    surface             = LtSurface,
+    onSurface           = LtTextPrimary,
+    surfaceVariant      = LtSurfaceAlt,
+    onSurfaceVariant    = LtTextSecondary,
+    outline             = LtOutline,
+    error               = StError,
+    onError             = Color.White
 )
 
 private val AppTypography = Typography(
@@ -80,94 +133,105 @@ private val AppTypography = Typography(
         letterSpacing = (-2).sp
     ),
     displayMedium = TextStyle(
-        fontFamily = FontFamily.Monospace,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 72.sp,
-        lineHeight = 76.sp,
+        fontSize = 56.sp,
+        lineHeight = 60.sp,
         letterSpacing = (-1).sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 36.sp,
+        lineHeight = 44.sp
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 38.sp
+        fontSize = 28.sp,
+        lineHeight = 34.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 26.sp,
-        lineHeight = 32.sp
+        fontSize = 22.sp,
+        lineHeight = 28.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp
+        fontSize = 18.sp,
+        lineHeight = 24.sp
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 22.sp
+        fontSize = 15.sp,
+        lineHeight = 20.sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.sp,
+        lineHeight = 18.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
+        fontSize = 15.sp,
+        lineHeight = 22.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
+        fontSize = 13.sp,
+        lineHeight = 18.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 11.sp,
+        lineHeight = 15.sp
     ),
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.2.sp
+        fontSize = 13.sp,
+        lineHeight = 17.sp,
+        letterSpacing = 0.1.sp
     ),
     labelMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 1.1.sp
+        fontSize = 11.sp,
+        lineHeight = 14.sp,
+        letterSpacing = 0.3.sp
     ),
     labelSmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 1.3.sp
+        fontSize = 10.sp,
+        lineHeight = 13.sp,
+        letterSpacing = 0.5.sp
     )
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(12.dp),
-    small = RoundedCornerShape(16.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+    extraSmall  = RoundedCornerShape(6.dp),
+    small       = RoundedCornerShape(10.dp),
+    medium      = RoundedCornerShape(14.dp),
+    large       = RoundedCornerShape(18.dp),
+    extraLarge  = RoundedCornerShape(24.dp)
 )
 
-val MapBackdropGradient = Brush.verticalGradient(
-    colors = listOf(
-        Color(0xAA0C101A),
-        Color(0x990F1117),
-        MospeeBackground
-    )
-)
-
-val SheetGlowGradient = Brush.verticalGradient(
-    colors = listOf(
-        MospeeBlue.copy(alpha = 0.22f),
-        MospeeSurface.copy(alpha = 0.95f),
-        MospeeSurface
-    )
-)
+val MapBackdropColor = StBackground
+val SheetBackgroundColor = StSurface
 
 @Composable
 fun MOSPEETheme(
@@ -175,10 +239,12 @@ fun MOSPEETheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme: ColorScheme = if (darkTheme) DarkColors else LightColors
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        shapes = AppShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalDarkMode provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content
+        )
+    }
 }

@@ -31,6 +31,9 @@ class HistoryViewModel @Inject constructor(
     val useKmh: StateFlow<Boolean> = prefsRepository.useKmh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val darkMode: StateFlow<Boolean> = prefsRepository.darkMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     init {
         viewModelScope.launch {
             getAllTripsUseCase()

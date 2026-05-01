@@ -17,6 +17,7 @@ import com.mospee.data.local.dao.TripDao;
 import com.mospee.data.remote.FirebaseManager;
 import com.mospee.data.repository.TripRepositoryImpl;
 import com.mospee.data.repository.UserPreferencesRepository;
+import com.mospee.data.repository.WeatherRepository;
 import com.mospee.di.AppModule_ProvideDatabaseFactory;
 import com.mospee.di.AppModule_ProvideFusedLocationProviderClientFactory;
 import com.mospee.di.AppModule_ProvideLocationClientFactory;
@@ -39,6 +40,8 @@ import com.mospee.ui.home.HomeViewModel;
 import com.mospee.ui.home.HomeViewModel_HiltModules;
 import com.mospee.ui.settings.SettingsViewModel;
 import com.mospee.ui.settings.SettingsViewModel_HiltModules;
+import com.mospee.ui.statistics.StatisticsViewModel;
+import com.mospee.ui.statistics.StatisticsViewModel_HiltModules;
 import com.mospee.ui.summary.TripSummaryViewModel;
 import com.mospee.ui.summary.TripSummaryViewModel_HiltModules;
 import com.mospee.ui.trip.LiveTripViewModel;
@@ -402,7 +405,7 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(ImmutableMap.<String, Boolean>of(LazyClassKeyProvider.com_mospee_ui_history_HistoryViewModel, HistoryViewModel_HiltModules.KeyModule.provide(), LazyClassKeyProvider.com_mospee_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide(), LazyClassKeyProvider.com_mospee_ui_trip_LiveTripViewModel, LiveTripViewModel_HiltModules.KeyModule.provide(), LazyClassKeyProvider.com_mospee_ui_settings_SettingsViewModel, SettingsViewModel_HiltModules.KeyModule.provide(), LazyClassKeyProvider.com_mospee_ui_summary_TripSummaryViewModel, TripSummaryViewModel_HiltModules.KeyModule.provide()));
+      return LazyClassKeyMap.<Boolean>of(ImmutableMap.<String, Boolean>builderWithExpectedSize(6).put(LazyClassKeyProvider.com_mospee_ui_history_HistoryViewModel, HistoryViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_mospee_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_mospee_ui_trip_LiveTripViewModel, LiveTripViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_mospee_ui_settings_SettingsViewModel, SettingsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_mospee_ui_statistics_StatisticsViewModel, StatisticsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_mospee_ui_summary_TripSummaryViewModel, TripSummaryViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -430,30 +433,35 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_mospee_ui_settings_SettingsViewModel = "com.mospee.ui.settings.SettingsViewModel";
+      static String com_mospee_ui_history_HistoryViewModel = "com.mospee.ui.history.HistoryViewModel";
 
-      static String com_mospee_ui_summary_TripSummaryViewModel = "com.mospee.ui.summary.TripSummaryViewModel";
+      static String com_mospee_ui_settings_SettingsViewModel = "com.mospee.ui.settings.SettingsViewModel";
 
       static String com_mospee_ui_home_HomeViewModel = "com.mospee.ui.home.HomeViewModel";
 
-      static String com_mospee_ui_history_HistoryViewModel = "com.mospee.ui.history.HistoryViewModel";
-
       static String com_mospee_ui_trip_LiveTripViewModel = "com.mospee.ui.trip.LiveTripViewModel";
 
-      @KeepFieldType
-      SettingsViewModel com_mospee_ui_settings_SettingsViewModel2;
+      static String com_mospee_ui_summary_TripSummaryViewModel = "com.mospee.ui.summary.TripSummaryViewModel";
 
-      @KeepFieldType
-      TripSummaryViewModel com_mospee_ui_summary_TripSummaryViewModel2;
-
-      @KeepFieldType
-      HomeViewModel com_mospee_ui_home_HomeViewModel2;
+      static String com_mospee_ui_statistics_StatisticsViewModel = "com.mospee.ui.statistics.StatisticsViewModel";
 
       @KeepFieldType
       HistoryViewModel com_mospee_ui_history_HistoryViewModel2;
 
       @KeepFieldType
+      SettingsViewModel com_mospee_ui_settings_SettingsViewModel2;
+
+      @KeepFieldType
+      HomeViewModel com_mospee_ui_home_HomeViewModel2;
+
+      @KeepFieldType
       LiveTripViewModel com_mospee_ui_trip_LiveTripViewModel2;
+
+      @KeepFieldType
+      TripSummaryViewModel com_mospee_ui_summary_TripSummaryViewModel2;
+
+      @KeepFieldType
+      StatisticsViewModel com_mospee_ui_statistics_StatisticsViewModel2;
     }
   }
 
@@ -471,6 +479,8 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
     private Provider<LiveTripViewModel> liveTripViewModelProvider;
 
     private Provider<SettingsViewModel> settingsViewModelProvider;
+
+    private Provider<StatisticsViewModel> statisticsViewModelProvider;
 
     private Provider<TripSummaryViewModel> tripSummaryViewModelProvider;
 
@@ -511,12 +521,13 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
       this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
       this.liveTripViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
       this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
-      this.tripSummaryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.statisticsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.tripSummaryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
     }
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(ImmutableMap.<String, javax.inject.Provider<ViewModel>>of(LazyClassKeyProvider.com_mospee_ui_history_HistoryViewModel, ((Provider) historyViewModelProvider), LazyClassKeyProvider.com_mospee_ui_home_HomeViewModel, ((Provider) homeViewModelProvider), LazyClassKeyProvider.com_mospee_ui_trip_LiveTripViewModel, ((Provider) liveTripViewModelProvider), LazyClassKeyProvider.com_mospee_ui_settings_SettingsViewModel, ((Provider) settingsViewModelProvider), LazyClassKeyProvider.com_mospee_ui_summary_TripSummaryViewModel, ((Provider) tripSummaryViewModelProvider)));
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(ImmutableMap.<String, javax.inject.Provider<ViewModel>>builderWithExpectedSize(6).put(LazyClassKeyProvider.com_mospee_ui_history_HistoryViewModel, ((Provider) historyViewModelProvider)).put(LazyClassKeyProvider.com_mospee_ui_home_HomeViewModel, ((Provider) homeViewModelProvider)).put(LazyClassKeyProvider.com_mospee_ui_trip_LiveTripViewModel, ((Provider) liveTripViewModelProvider)).put(LazyClassKeyProvider.com_mospee_ui_settings_SettingsViewModel, ((Provider) settingsViewModelProvider)).put(LazyClassKeyProvider.com_mospee_ui_statistics_StatisticsViewModel, ((Provider) statisticsViewModelProvider)).put(LazyClassKeyProvider.com_mospee_ui_summary_TripSummaryViewModel, ((Provider) tripSummaryViewModelProvider)).build());
     }
 
     @Override
@@ -530,11 +541,13 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
 
       static String com_mospee_ui_summary_TripSummaryViewModel = "com.mospee.ui.summary.TripSummaryViewModel";
 
-      static String com_mospee_ui_history_HistoryViewModel = "com.mospee.ui.history.HistoryViewModel";
+      static String com_mospee_ui_home_HomeViewModel = "com.mospee.ui.home.HomeViewModel";
 
       static String com_mospee_ui_trip_LiveTripViewModel = "com.mospee.ui.trip.LiveTripViewModel";
 
-      static String com_mospee_ui_home_HomeViewModel = "com.mospee.ui.home.HomeViewModel";
+      static String com_mospee_ui_statistics_StatisticsViewModel = "com.mospee.ui.statistics.StatisticsViewModel";
+
+      static String com_mospee_ui_history_HistoryViewModel = "com.mospee.ui.history.HistoryViewModel";
 
       @KeepFieldType
       SettingsViewModel com_mospee_ui_settings_SettingsViewModel2;
@@ -543,13 +556,16 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
       TripSummaryViewModel com_mospee_ui_summary_TripSummaryViewModel2;
 
       @KeepFieldType
-      HistoryViewModel com_mospee_ui_history_HistoryViewModel2;
+      HomeViewModel com_mospee_ui_home_HomeViewModel2;
 
       @KeepFieldType
       LiveTripViewModel com_mospee_ui_trip_LiveTripViewModel2;
 
       @KeepFieldType
-      HomeViewModel com_mospee_ui_home_HomeViewModel2;
+      StatisticsViewModel com_mospee_ui_statistics_StatisticsViewModel2;
+
+      @KeepFieldType
+      HistoryViewModel com_mospee_ui_history_HistoryViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -577,7 +593,7 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
           return (T) new HistoryViewModel(viewModelCImpl.getAllTripsUseCase(), viewModelCImpl.deleteTripUseCase(), singletonCImpl.userPreferencesRepositoryProvider.get());
 
           case 1: // com.mospee.ui.home.HomeViewModel 
-          return (T) new HomeViewModel(viewModelCImpl.getLastTripUseCase(), singletonCImpl.userPreferencesRepositoryProvider.get(), singletonCImpl.provideLocationManagerProvider.get(), singletonCImpl.provideLocationClientProvider.get());
+          return (T) new HomeViewModel(viewModelCImpl.getLastTripUseCase(), viewModelCImpl.getAllTripsUseCase(), singletonCImpl.userPreferencesRepositoryProvider.get(), singletonCImpl.provideLocationManagerProvider.get(), singletonCImpl.provideLocationClientProvider.get(), singletonCImpl.weatherRepositoryProvider.get());
 
           case 2: // com.mospee.ui.trip.LiveTripViewModel 
           return (T) new LiveTripViewModel(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), viewModelCImpl.startTripUseCase(), singletonCImpl.provideTripRepositoryProvider.get(), singletonCImpl.userPreferencesRepositoryProvider.get(), singletonCImpl.provideLocationManagerProvider.get(), singletonCImpl.provideLocationClientProvider.get());
@@ -585,8 +601,11 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
           case 3: // com.mospee.ui.settings.SettingsViewModel 
           return (T) new SettingsViewModel(singletonCImpl.userPreferencesRepositoryProvider.get());
 
-          case 4: // com.mospee.ui.summary.TripSummaryViewModel 
-          return (T) new TripSummaryViewModel(viewModelCImpl.getTripDetailsUseCase(), viewModelCImpl.deleteTripUseCase(), singletonCImpl.userPreferencesRepositoryProvider.get());
+          case 4: // com.mospee.ui.statistics.StatisticsViewModel 
+          return (T) new StatisticsViewModel(singletonCImpl.provideTripRepositoryProvider.get(), singletonCImpl.userPreferencesRepositoryProvider.get());
+
+          case 5: // com.mospee.ui.summary.TripSummaryViewModel 
+          return (T) new TripSummaryViewModel(viewModelCImpl.getTripDetailsUseCase(), viewModelCImpl.deleteTripUseCase(), singletonCImpl.userPreferencesRepositoryProvider.get(), singletonCImpl.weatherRepositoryProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -700,6 +719,8 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
 
     private Provider<LocationClient> provideLocationClientProvider;
 
+    private Provider<WeatherRepository> weatherRepositoryProvider;
+
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
@@ -724,6 +745,7 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
       this.provideLocationManagerProvider = DoubleCheck.provider(new SwitchingProvider<LocationManager>(singletonCImpl, 5));
       this.provideFusedLocationProviderClientProvider = DoubleCheck.provider(new SwitchingProvider<FusedLocationProviderClient>(singletonCImpl, 7));
       this.provideLocationClientProvider = DoubleCheck.provider(new SwitchingProvider<LocationClient>(singletonCImpl, 6));
+      this.weatherRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<WeatherRepository>(singletonCImpl, 8));
     }
 
     @Override
@@ -782,6 +804,9 @@ public final class DaggerMospeeApp_HiltComponents_SingletonC {
 
           case 7: // com.google.android.gms.location.FusedLocationProviderClient 
           return (T) AppModule_ProvideFusedLocationProviderClientFactory.provideFusedLocationProviderClient(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 8: // com.mospee.data.repository.WeatherRepository 
+          return (T) new WeatherRepository();
 
           default: throw new AssertionError(id);
         }

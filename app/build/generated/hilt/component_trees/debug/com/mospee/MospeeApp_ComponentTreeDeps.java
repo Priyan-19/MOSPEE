@@ -27,6 +27,8 @@ import hilt_aggregated_deps._com_mospee_ui_home_HomeViewModel_HiltModules_BindsM
 import hilt_aggregated_deps._com_mospee_ui_home_HomeViewModel_HiltModules_KeyModule;
 import hilt_aggregated_deps._com_mospee_ui_settings_SettingsViewModel_HiltModules_BindsModule;
 import hilt_aggregated_deps._com_mospee_ui_settings_SettingsViewModel_HiltModules_KeyModule;
+import hilt_aggregated_deps._com_mospee_ui_statistics_StatisticsViewModel_HiltModules_BindsModule;
+import hilt_aggregated_deps._com_mospee_ui_statistics_StatisticsViewModel_HiltModules_KeyModule;
 import hilt_aggregated_deps._com_mospee_ui_summary_TripSummaryViewModel_HiltModules_BindsModule;
 import hilt_aggregated_deps._com_mospee_ui_summary_TripSummaryViewModel_HiltModules_KeyModule;
 import hilt_aggregated_deps._com_mospee_ui_trip_LiveTripViewModel_HiltModules_BindsModule;
@@ -81,6 +83,8 @@ import hilt_aggregated_deps._dagger_hilt_android_internal_modules_HiltWrapper_Ac
         _com_mospee_ui_home_HomeViewModel_HiltModules_KeyModule.class,
         _com_mospee_ui_settings_SettingsViewModel_HiltModules_BindsModule.class,
         _com_mospee_ui_settings_SettingsViewModel_HiltModules_KeyModule.class,
+        _com_mospee_ui_statistics_StatisticsViewModel_HiltModules_BindsModule.class,
+        _com_mospee_ui_statistics_StatisticsViewModel_HiltModules_KeyModule.class,
         _com_mospee_ui_summary_TripSummaryViewModel_HiltModules_BindsModule.class,
         _com_mospee_ui_summary_TripSummaryViewModel_HiltModules_KeyModule.class,
         _com_mospee_ui_trip_LiveTripViewModel_HiltModules_BindsModule.class,

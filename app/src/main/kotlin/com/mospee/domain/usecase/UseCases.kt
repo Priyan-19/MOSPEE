@@ -23,7 +23,8 @@ class StopTripUseCase @Inject constructor(
         distanceMeters: Float,
         avgSpeedKmh: Float,
         topSpeedKmh: Float,
-        durationSeconds: Long
+        durationSeconds: Long,
+        points: List<LocationPoint>? = null
     ) {
         repository.stopTrip(
             tripId = tripId,
@@ -31,7 +32,8 @@ class StopTripUseCase @Inject constructor(
             distanceMeters = distanceMeters,
             avgSpeedKmh = avgSpeedKmh,
             topSpeedKmh = topSpeedKmh,
-            durationSeconds = durationSeconds
+            durationSeconds = durationSeconds,
+            points = points
         )
     }
 }

@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     }
     data object History    : Screen("history")
     data object Settings   : Screen("settings")
+    data object Statistics : Screen("statistics")
 }
 
 @Composable
@@ -43,6 +44,9 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onOpenSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onOpenStats = {
+                    navController.navigate(Screen.Statistics.route)
                 }
             )
         }
@@ -59,6 +63,42 @@ fun AppNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.History.route) {
                         popUpTo(Screen.Home.route)
                     }
+                },
+                onOpenStats = {
+                    navController.navigate(Screen.Statistics.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onOpenLive = {
+                    navController.navigate(Screen.LiveTrip.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Statistics.route) {
+            com.mospee.ui.statistics.StatisticsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onOpenHistory = {
+                    navController.navigate(Screen.History.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onOpenSettings = {
+                    navController.navigate(Screen.Settings.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onOpenLive = {
+                    navController.navigate(Screen.LiveTrip.route) {
+                        popUpTo(Screen.Home.route)
+                    }
                 }
             )
         }
@@ -72,6 +112,20 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onBack = {
                     navController.popBackStack()
+                },
+                onOpenHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onOpenHistory = {
+                    navController.navigate(Screen.History.route) { popUpTo(Screen.Home.route) }
+                },
+                onOpenStats = {
+                    navController.navigate(Screen.Statistics.route) { popUpTo(Screen.Home.route) }
+                },
+                onOpenSettings = {
+                    navController.navigate(Screen.Settings.route) { popUpTo(Screen.Home.route) }
                 }
             )
         }
@@ -107,6 +161,14 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onOpenSettings = {
                     navController.navigate(Screen.Settings.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onOpenStats = {
+                    navController.navigate(Screen.Statistics.route)
+                },
+                onOpenLive = {
+                    navController.navigate(Screen.LiveTrip.route) {
                         popUpTo(Screen.Home.route)
                     }
                 }

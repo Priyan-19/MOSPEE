@@ -5,6 +5,7 @@ import com.mospee.service.LocationForegroundService_GeneratedInjector;
 import com.mospee.ui.history.HistoryViewModel_HiltModules;
 import com.mospee.ui.home.HomeViewModel_HiltModules;
 import com.mospee.ui.settings.SettingsViewModel_HiltModules;
+import com.mospee.ui.statistics.StatisticsViewModel_HiltModules;
 import com.mospee.ui.summary.TripSummaryViewModel_HiltModules;
 import com.mospee.ui.trip.LiveTripViewModel_HiltModules;
 import dagger.Binds;
@@ -167,6 +168,7 @@ public final class MospeeApp_HiltComponents {
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
           SettingsViewModel_HiltModules.KeyModule.class,
+          StatisticsViewModel_HiltModules.KeyModule.class,
           TripSummaryViewModel_HiltModules.KeyModule.class
       }
   )
@@ -208,6 +210,7 @@ public final class MospeeApp_HiltComponents {
           HomeViewModel_HiltModules.BindsModule.class,
           LiveTripViewModel_HiltModules.BindsModule.class,
           SettingsViewModel_HiltModules.BindsModule.class,
+          StatisticsViewModel_HiltModules.BindsModule.class,
           TripSummaryViewModel_HiltModules.BindsModule.class
       }
   )

@@ -1,13 +1,40 @@
+# Gradle
+.gradle/
+build/
+app/build/
+*.main.kts
+
+# IntelliJ / Android Studio
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+*.iws
+*.ipr
+out/
+.navigation/
+
+# VS Code
+.vscode/
+
+# Local configuration
 local.properties
+google-services.json
+
+# Build and Captures
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aar
 *.jks
 *.keystore
-google-services.json
+
+# OS / Misc
+.DS_Store
+Thumbs.db
+firebase-debug.log
+
+# Logs
+*.log
+
+# Kotlin
+.kotlin/

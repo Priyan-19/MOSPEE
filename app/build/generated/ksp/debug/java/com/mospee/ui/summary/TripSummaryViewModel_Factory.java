@@ -1,6 +1,7 @@
 package com.mospee.ui.summary;
 
 import com.mospee.data.repository.UserPreferencesRepository;
+import com.mospee.data.repository.WeatherRepository;
 import com.mospee.domain.usecase.DeleteTripUseCase;
 import com.mospee.domain.usecase.GetTripDetailsUseCase;
 import dagger.internal.DaggerGenerated;
@@ -31,28 +32,34 @@ public final class TripSummaryViewModel_Factory implements Factory<TripSummaryVi
 
   private final Provider<UserPreferencesRepository> prefsRepositoryProvider;
 
+  private final Provider<WeatherRepository> weatherRepositoryProvider;
+
   public TripSummaryViewModel_Factory(Provider<GetTripDetailsUseCase> getTripDetailsUseCaseProvider,
       Provider<DeleteTripUseCase> deleteTripUseCaseProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<WeatherRepository> weatherRepositoryProvider) {
     this.getTripDetailsUseCaseProvider = getTripDetailsUseCaseProvider;
     this.deleteTripUseCaseProvider = deleteTripUseCaseProvider;
     this.prefsRepositoryProvider = prefsRepositoryProvider;
+    this.weatherRepositoryProvider = weatherRepositoryProvider;
   }
 
   @Override
   public TripSummaryViewModel get() {
-    return newInstance(getTripDetailsUseCaseProvider.get(), deleteTripUseCaseProvider.get(), prefsRepositoryProvider.get());
+    return newInstance(getTripDetailsUseCaseProvider.get(), deleteTripUseCaseProvider.get(), prefsRepositoryProvider.get(), weatherRepositoryProvider.get());
   }
 
   public static TripSummaryViewModel_Factory create(
       Provider<GetTripDetailsUseCase> getTripDetailsUseCaseProvider,
       Provider<DeleteTripUseCase> deleteTripUseCaseProvider,
-      Provider<UserPreferencesRepository> prefsRepositoryProvider) {
-    return new TripSummaryViewModel_Factory(getTripDetailsUseCaseProvider, deleteTripUseCaseProvider, prefsRepositoryProvider);
+      Provider<UserPreferencesRepository> prefsRepositoryProvider,
+      Provider<WeatherRepository> weatherRepositoryProvider) {
+    return new TripSummaryViewModel_Factory(getTripDetailsUseCaseProvider, deleteTripUseCaseProvider, prefsRepositoryProvider, weatherRepositoryProvider);
   }
 
   public static TripSummaryViewModel newInstance(GetTripDetailsUseCase getTripDetailsUseCase,
-      DeleteTripUseCase deleteTripUseCase, UserPreferencesRepository prefsRepository) {
-    return new TripSummaryViewModel(getTripDetailsUseCase, deleteTripUseCase, prefsRepository);
+      DeleteTripUseCase deleteTripUseCase, UserPreferencesRepository prefsRepository,
+      WeatherRepository weatherRepository) {
+    return new TripSummaryViewModel(getTripDetailsUseCase, deleteTripUseCase, prefsRepository, weatherRepository);
   }
 }

@@ -32,13 +32,16 @@ class TripRepositoryImpl @Inject constructor(
         distanceMeters: Float,
         avgSpeedKmh: Float,
         topSpeedKmh: Float,
-        durationSeconds: Long
+        durationSeconds: Long,
+        points: List<LocationPoint>?
     ) {
-        val points = locationPointDao.getPointsForTrip(tripId)
-        val encodedRoute = RouteUtils.encodeRoute(points)
+        val trip = tripDao.getTripById(tripId) ?: return
+        
+        // Use provided points if available (avoids DB fetch lag), otherwise fetch from DAO
+        val finalPoints = points?.map { it.toEntity() } ?: locationPointDao.getPointsForTrip(tripId)
+        val encodedRoute = RouteUtils.encodeRoute(finalPoints)
 
-        val existing = tripDao.getTripById(tripId) ?: return
-        val updated = existing.copy(
+        val updated = trip.copy(
             endTime = endTime,
             distanceMeters = distanceMeters,
             avgSpeedKmh = avgSpeedKmh,
@@ -50,10 +53,7 @@ class TripRepositoryImpl @Inject constructor(
         
         tripDao.updateTrip(updated)
         
-        // Clear raw points for this trip from Room to save space
-        locationPointDao.deletePointsForTrip(tripId)
-        
-        // Prune Room DB to keep only last 10 trips
+        // Deletion of raw points is now handled during pruning to ensure summary screen can show the route
         tripDao.pruneOldTrips()
         
         // Try initial sync

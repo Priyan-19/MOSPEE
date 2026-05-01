@@ -81,6 +81,18 @@ class LiveTripViewModel @Inject constructor(
     val meterType: StateFlow<String> = prefsRepository.meterType
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "digital")
 
+    val vibrationEnabled: StateFlow<Boolean> = prefsRepository.vibrationEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val soundEnabled: StateFlow<Boolean> = prefsRepository.soundEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val autoPauseEnabled: StateFlow<Boolean> = prefsRepository.autoPauseEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val darkMode: StateFlow<Boolean> = prefsRepository.darkMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     private val _routePoints = MutableStateFlow<List<LocationPoint>>(emptyList())
     val routePoints: StateFlow<List<LocationPoint>> = _routePoints.asStateFlow()
 
@@ -96,7 +108,6 @@ class LiveTripViewModel @Inject constructor(
         observeServiceState()
         fetchInitialLocation()
         
-        // Immediate check for last location to avoid "Starting Trip..." delay
         viewModelScope.launch {
             locationClient.getLastKnownLocation()?.let { location ->
                 if (_uiState.value is TripUiState.Starting) {
@@ -104,9 +115,17 @@ class LiveTripViewModel @Inject constructor(
                         initialLat = location.latitude,
                         initialLng = location.longitude
                     )
-                    startTrip() // Start immediately if last location is fresh
                 }
             }
+        }
+    }
+
+    fun retryGpsCheck() {
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            _uiState.value = TripUiState.Starting()
+            fetchInitialLocation()
+        } else {
+            _uiState.value = TripUiState.GpsDisabled
         }
     }
 
@@ -121,8 +140,6 @@ class LiveTripViewModel @Inject constructor(
                         initialLat = location.latitude,
                         initialLng = location.longitude
                     )
-                    // AUTO-START: Once we have a location, kick off the recording immediately
-                    startTrip()
                 }
             }
             .catch { e -> e.printStackTrace() }
@@ -223,6 +240,22 @@ class LiveTripViewModel @Inject constructor(
         context.startService(intent)
     }
 
+    fun toggleOverspeed(enabled: Boolean) = viewModelScope.launch {
+        prefsRepository.setOverspeedEnabled(enabled)
+    }
+
+    fun toggleVibration(enabled: Boolean) = viewModelScope.launch {
+        prefsRepository.setVibrationEnabled(enabled)
+    }
+
+    fun toggleSound(enabled: Boolean) = viewModelScope.launch {
+        prefsRepository.setSoundEnabled(enabled)
+    }
+
+    fun toggleAutoPause(enabled: Boolean) = viewModelScope.launch {
+        prefsRepository.setAutoPauseEnabled(enabled)
+    }
+
     private fun observeRoute(tripId: Long) {
         routeJob?.cancel()
         routeJob = viewModelScope.launch {
@@ -234,24 +267,28 @@ class LiveTripViewModel @Inject constructor(
 
     private fun triggerOverspeedAlert() {
         viewModelScope.launch {
-            try {
-                val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 80)
-                toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 500)
-            } catch (_: Exception) {}
+            if (soundEnabled.value) {
+                try {
+                    val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 80)
+                    toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 500)
+                } catch (_: Exception) {}
+            }
 
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val vm = context.getSystemService(VibratorManager::class.java)
-                    vm.defaultVibrator.vibrate(
-                        VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1)
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    val vibrator = context.getSystemService(Vibrator::class.java)
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
-                }
-            } catch (_: Exception) {}
+            if (vibrationEnabled.value) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vm = context.getSystemService(VibratorManager::class.java)
+                        vm.defaultVibrator.vibrate(
+                            VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1)
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val vibrator = context.getSystemService(Vibrator::class.java)
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
+                    }
+                } catch (_: Exception) {}
+            }
         }
     }
 }
