@@ -3,6 +3,11 @@
 # 🏎️ MOSPEE
 ### Premium Automotive Performance Tracking Platform 💨
 
+<picture>
+  <img alt="OrcaSlicer logo" src="app/src/main/res/drawable/ic_app_logo.png" width="100px" height="100px">
+</picture>
+<br><br>
+
 [![Kotlin](https://img.shields.io/badge/Kotlin_2.0-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
