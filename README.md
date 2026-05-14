@@ -4,7 +4,7 @@
 ### Premium Automotive Performance Tracking Platform 💨
 
 <picture>
-  <img alt="OrcaSlicer logo" src="app/src/main/res/drawable/ic_app_logo.png" width="100px" height="100px">
+  <img alt="OrcaSlicer logo" src="app/src/main/res/drawable/ic_launcher_foreground.png" width="100px" height="100px">
 </picture>
 <br><br>
 
